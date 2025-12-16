@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.calculate_routes import router as calculate_routes
 from src.api.items_routes import router as items_routes
 from src.api.prices_routes import router as prices_routes
+from src.api.ocr_routes import router as ocr_routes
 from src.settings.config import env_settings
 import uvicorn
 
@@ -27,6 +28,7 @@ def create_app() -> FastAPI:
     app.include_router(calculate_routes, prefix="/api")
     app.include_router(items_routes, prefix="/api")
     app.include_router(prices_routes, prefix="/api")
+    app.include_router(ocr_routes, prefix="/api")
     
     return app
 

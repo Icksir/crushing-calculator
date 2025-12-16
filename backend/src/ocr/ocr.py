@@ -48,7 +48,7 @@ def preprocesar_hsv(img):
     
     return mask_inv
 
-def parsear_resultados_precios(texto_raw):
+def parsear_resultados_precios(texto_raw, verbose=False):
     """Analiza texto con el formato: x1 792"""
     resultados = {}
     lineas = texto_raw.split('\n')
@@ -69,31 +69,45 @@ def parsear_resultados_precios(texto_raw):
                 lote = int(lote_clean)
                 precio = int(precio_clean)
                 resultados[f"x{lote}"] = precio
-                print(f"   ✅ Leído: Lote {lote} -> {precio} kamas")
+                if verbose:
+                    print(f"   ✅ Leído: Lote {lote} -> {precio} kamas")
             except ValueError:
                 continue
     return resultados
 
-def main():
-    print(f"📸 Capturando región: {REGION_MERCADILLO}...")
-    x, y, w, h = REGION_MERCADILLO
+def get_ocr_data(image_bytes: bytes = None, verbose: bool = False):
+    img = None
     
-    try:
-        bbox = (x, y, x + w, y + h)
-        screenshot = ImageGrab.grab(bbox=bbox, all_screens=True)
-        img_np = np.array(screenshot)
-        img = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-    except Exception as e:
-        print(f"❌ Error captura: {e}")
-        return
+    if image_bytes:
+        if verbose: print("📸 Procesando imagen recibida...")
+        try:
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if img is None:
+                return {"error": "No se pudo decodificar la imagen"}
+        except Exception as e:
+            if verbose: print(f"❌ Error procesando imagen: {e}")
+            return {"error": str(e)}
+    else:
+        if verbose: print(f"📸 Capturando región: {REGION_MERCADILLO}...")
+        x, y, w, h = REGION_MERCADILLO
+        
+        try:
+            bbox = (x, y, x + w, y + h)
+            screenshot = ImageGrab.grab(bbox=bbox, all_screens=True)
+            img_np = np.array(screenshot)
+            img = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        except Exception as e:
+            if verbose: print(f"❌ Error captura: {e}")
+            return {"error": str(e)}
 
     h_img, w_img = img.shape[:2]
-    print(f"Dimensiones captura: {w_img}x{h_img}")
+    if verbose: print(f"Dimensiones captura: {w_img}x{h_img}")
 
     # ==========================================
     # [NUEVO] --- EXTRACCIÓN DEL NOMBRE ---
     # ==========================================
-    print("🔍 Extrayendo nombre del objeto...")
+    if verbose: print("🔍 Extrayendo nombre del objeto...")
     
     # 1. Definir ROI del Nombre (Region of Interest)
     # Basado en tus imágenes, el nombre está arriba a la derecha del icono.
@@ -115,14 +129,14 @@ def main():
 
     if not nombre_limpio:
         nombre_limpio = "Desconocido/No detectado"
-        print("⚠️ No se pudo leer el nombre claramente.")
+        if verbose: print("⚠️ No se pudo leer el nombre claramente.")
     else:
-        print(f"📦 NOMBRE DETECTADO: '{nombre_limpio}'")
+        if verbose: print(f"📦 NOMBRE DETECTADO: '{nombre_limpio}'")
 
     # ==========================================
     # --- EXTRACCIÓN DE PRECIOS (Existente) ---
     # ==========================================
-    print("💰 Extrayendo precios...")
+    if verbose: print("💰 Extrayendo precios...")
     # Ajuste de recorte de la tabla (tu recorte original estaba bien)
     # y: desde 180 hasta el final
     # x: desde 60 (saltar icono lote) hasta ancho-120 (saltar botón comprar)
@@ -136,7 +150,7 @@ def main():
     texto_precios = pytesseract.image_to_string(img_precios_proc, config=config_tesseract_precios)
     
     # Parsear
-    datos_precios = parsear_resultados_precios(texto_precios)
+    datos_precios = parsear_resultados_precios(texto_precios, verbose=verbose)
 
     # ==========================================
     # --- RESULTADO FINAL ---
@@ -146,12 +160,15 @@ def main():
         "precios_mercado": datos_precios
     }
 
-    print("\n" + "="*30)
-    print("✅ JSON FINAL COMPLETO:", resultado_final)
-    print("="*30)
+    if verbose:
+        print("\n" + "="*30)
+        print("✅ JSON FINAL COMPLETO:", resultado_final)
+        print("="*30)
+    
+    return resultado_final
 
 if __name__ == "__main__":
     # Pequeña pausa para cambiar de ventana si es necesario
     print("Iniciando en 2 segundos...")
     time.sleep(2)
-    main()
+    get_ocr_data()
