@@ -28,7 +28,8 @@ packages = [
     {include = "services", from = "src"},
     {include = "settings", from = "src"},
     {include = "tests"},
-    {include = "db", from = "src"}
+    {include = "db", from = "src"},
+    {include = "ocr", from = "src"}
     ]
 
 
