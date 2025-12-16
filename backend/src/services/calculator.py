@@ -420,17 +420,26 @@ async def calculate_profit(request: CalculateRequest) -> CalculateResponse:
         breakdown_list.append(rune_data)
 
     # 4. RESULTADOS FINALES
-    net_profit = total_rune_value - request.item_cost
+    normal_profit = total_rune_value - request.item_cost
     
     # Ajuste por si no hubo ninguna stat rentable (evitar -inf)
     if max_focus_profit == -float('inf'):
         max_focus_profit = -request.item_cost
 
+    # Determinar el mejor escenario (Normal vs Focus)
+    if max_focus_profit > normal_profit:
+        final_net_profit = max_focus_profit
+        final_total_value = max_focus_profit + request.item_cost
+    else:
+        final_net_profit = normal_profit
+        final_total_value = total_rune_value
+
     return CalculateResponse(
-        total_estimated_value=round(total_rune_value, 2),
-        net_profit=round(net_profit, 2),
+        total_estimated_value=round(final_total_value, 2),
+        net_profit=round(final_net_profit, 2),
         max_focus_profit=round(max_focus_profit, 2),
         best_focus_stat=best_focus_stat,
         breakdown=breakdown_list,
-        item_cost=request.item_cost 
+        item_cost=request.item_cost,
+        coefficient=request.coefficient
     )

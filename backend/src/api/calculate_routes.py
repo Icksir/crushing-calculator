@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from src.models.schemas import CalculateRequest, CalculateResponse
 from src.services.calculator import calculate_profit
 
-router = APIRouter()
+router = APIRouter(tags=['runes'])
 
 @router.post("/calculate", response_model=CalculateResponse)
 async def calculate_endpoint(request: CalculateRequest):

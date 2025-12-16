@@ -8,14 +8,21 @@ from src.db.database import get_db
 from src.models.sql_models import RunePriceModel, IngredientPriceModel
 from src.services.calculator import buscar_y_obtener_imagen
 
-router = APIRouter()
+router = APIRouter(tags=['prices'])
 
 class RunePriceUpdate(BaseModel):
     prices: Dict[str, int]
 
+from datetime import datetime
+
 class RunePriceResponse(BaseModel):
     price: int
     image_url: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+class IngredientPriceResponse(BaseModel):
+    price: int
+    updated_at: Optional[datetime] = None
 
 class IngredientPriceUpdate(BaseModel):
     item_id: int
@@ -26,7 +33,7 @@ class IngredientPriceUpdate(BaseModel):
 async def get_rune_prices(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(RunePriceModel))
     runes = result.scalars().all()
-    return {rune.rune_name: RunePriceResponse(price=rune.price, image_url=rune.image_url) for rune in runes}
+    return {rune.rune_name: RunePriceResponse(price=rune.price, image_url=rune.image_url, updated_at=rune.updated_at) for rune in runes}
 
 async def fetch_rune_images_task(db: AsyncSession):
     # This needs a new session if running in background, but for now let's try to use the one provided or create new one
@@ -92,11 +99,11 @@ async def update_rune_prices(update: RunePriceUpdate, db: AsyncSession = Depends
     await db.commit()
     return {"status": "ok"}
 
-@router.get("/prices/ingredients", response_model=Dict[int, int])
+@router.get("/prices/ingredients", response_model=Dict[int, IngredientPriceResponse])
 async def get_ingredient_prices(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(IngredientPriceModel))
     ingredients = result.scalars().all()
-    return {ing.item_id: ing.price for ing in ingredients}
+    return {ing.item_id: IngredientPriceResponse(price=ing.price, updated_at=ing.updated_at) for ing in ingredients}
 
 @router.post("/prices/ingredients")
 async def update_ingredient_prices(updates: List[IngredientPriceUpdate], db: AsyncSession = Depends(get_db)):

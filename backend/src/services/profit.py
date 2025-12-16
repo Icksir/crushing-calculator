@@ -1,12 +1,13 @@
 from typing import List, Dict
+import math
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from src.models.sql_models import IngredientPriceModel, RunePriceModel, ItemCoefficientHistoryModel
 from src.services.equipment import fetch_raw_equipment
 from src.services.calculator import get_rune_info, get_stat_density
-from src.models.schemas import ProfitItem
+from src.models.schemas import ProfitItem, PaginatedProfitResponse
 
-async def calculate_profitability(types: List[str], min_level: int, max_level: int, min_profit: int, db: AsyncSession) -> List[ProfitItem]:
+async def calculate_profitability(types: List[str], min_level: int, max_level: int, min_profit: int, min_craft_cost: int, page: int, limit: int, sort_by: str, sort_order: str, db: AsyncSession) -> PaginatedProfitResponse:
     # 1. Fetch items
     items = await fetch_raw_equipment(types, min_level, max_level)
     if not items:
@@ -18,6 +19,27 @@ async def calculate_profitability(types: List[str], min_level: int, max_level: i
     
     rune_prices_result = await db.execute(select(RunePriceModel))
     rune_prices = {row.RunePriceModel.rune_name: row.RunePriceModel.price for row in rune_prices_result}
+
+    # 3. Fetch latest coefficients for all items
+    item_ids = [item.get('ankama_id') for item in items if isinstance(item, dict) and item.get('ankama_id')]
+    
+    coef_map = {}
+    if item_ids:
+        # Subquery to find the latest timestamp for each item
+        subq = select(
+            ItemCoefficientHistoryModel.item_id,
+            func.max(ItemCoefficientHistoryModel.created_at).label('max_date')
+        ).where(ItemCoefficientHistoryModel.item_id.in_(item_ids)).group_by(ItemCoefficientHistoryModel.item_id).subquery()
+        
+        # Join to get the coefficient
+        query = select(ItemCoefficientHistoryModel.item_id, ItemCoefficientHistoryModel.coefficient).join(
+            subq, 
+            (ItemCoefficientHistoryModel.item_id == subq.c.item_id) & 
+            (ItemCoefficientHistoryModel.created_at == subq.c.max_date)
+        )
+        
+        coef_result = await db.execute(query)
+        coef_map = {row.item_id: row.coefficient for row in coef_result}
 
     results = []
 
@@ -44,6 +66,10 @@ async def calculate_profitability(types: List[str], min_level: int, max_level: i
             craft_cost += price * qty
             
         if not is_craftable or craft_cost == 0:
+            continue
+
+        # Filter by Min Craft Cost
+        if craft_cost < min_craft_cost:
             continue
 
         # Calculate Rune Value (Base)
@@ -136,21 +162,24 @@ async def calculate_profitability(types: List[str], min_level: int, max_level: i
                 max_focus_value = focus_value
                 
         # Best Value (Normal vs Focus)
-        total_rune_value = max(normal_value, max_focus_value)
+        total_rune_value_100 = max(normal_value, max_focus_value)
             
-        if total_rune_value == 0:
-            continue
-            
-        # Check minimum profit (assuming 100% coefficient for this check, or just raw value difference)
-        # Profit = RuneValue - Cost
-        if (total_rune_value - craft_cost) < min_profit:
+        if total_rune_value_100 == 0:
             continue
             
         # Calculate min coefficient as percentage (e.g. 50.0 for 50%)
         # Coef = Cost / BaseValue
         # If Cost=100, Base=200 -> Coef=0.5 -> 50%
-        min_coef = (craft_cost / total_rune_value) * 100
+        min_coef = (craft_cost / total_rune_value_100) * 100
         
+        # Filter by Risk (CMR < 120%) - REMOVED to show all items
+        # if min_coef > 120:
+        #    continue
+
+        # Calculate Real Value based on Current Coefficient
+        current_coef = coef_map.get(item.get('ankama_id'), 100)
+        real_rune_value = total_rune_value_100 * (current_coef / 100.0)
+
         results.append(ProfitItem(
             id=item.get('ankama_id'),
             name=item.get('name'),
@@ -158,21 +187,32 @@ async def calculate_profitability(types: List[str], min_level: int, max_level: i
             level=item_level,
             min_coefficient=round(min_coef, 2),
             craft_cost=round(craft_cost, 2),
-            estimated_rune_value=round(total_rune_value, 2)
+            estimated_rune_value=round(real_rune_value, 2),
+            value_at_100=round(total_rune_value_100, 2),
+            last_coefficient=current_coef
         ))
         
-    # Sort by min_coefficient ascending
-    results.sort(key=lambda x: x.min_coefficient)
+    # Sort
+    reverse = sort_order == 'desc'
     
-    top_results = results[:10]
+    if sort_by == 'risk':
+        results.sort(key=lambda x: x.min_coefficient, reverse=reverse)
+    else:
+        results.sort(key=lambda x: (x.estimated_rune_value - x.craft_cost), reverse=reverse)
     
-    # Fetch last coefficients for these items
-    for res in top_results:
-        query = select(ItemCoefficientHistoryModel.coefficient).where(
-            ItemCoefficientHistoryModel.item_id == res.id
-        ).order_by(desc(ItemCoefficientHistoryModel.created_at)).limit(1)
-        
-        coeff_result = await db.execute(query)
-        res.last_coefficient = coeff_result.scalar_one_or_none()
-        
-    return top_results
+    # Pagination Logic
+    total_items = len(results)
+    total_pages = math.ceil(total_items / limit)
+    
+    start_idx = (page - 1) * limit
+    end_idx = start_idx + limit
+    
+    paginated_items = results[start_idx:end_idx]
+    
+    return PaginatedProfitResponse(
+        items=paginated_items,
+        total=total_items,
+        page=page,
+        size=limit,
+        total_pages=total_pages
+    )

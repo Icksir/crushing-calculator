@@ -44,6 +44,35 @@ async def search_equipment(query: str) -> List[ItemSearchResponse]:
             ))
         return results
 
+async def search_resource(query: str) -> Optional[int]:
+    """
+    Search for a resource by name and return its Ankama ID.
+    Returns the ID of the first match or None.
+    """
+    async with httpx.AsyncClient() as client:
+        # Search in resources
+        response = await client.get(f"{DOFUSDUDE_API_URL}/items/resources/search?query={query}&limit=1")
+        if response.status_code == 200:
+            items = response.json()
+            if items and len(items) > 0:
+                return items[0].get('ankama_id')
+        
+        # Fallback: Search in consumables
+        response = await client.get(f"{DOFUSDUDE_API_URL}/items/consumables/search?query={query}&limit=1")
+        if response.status_code == 200:
+            items = response.json()
+            if items and len(items) > 0:
+                return items[0].get('ankama_id')
+                
+        # Fallback: Search in equipment (some items might be equipment)
+        response = await client.get(f"{DOFUSDUDE_API_URL}/items/equipment/search?query={query}&limit=1")
+        if response.status_code == 200:
+            items = response.json()
+            if items and len(items) > 0:
+                return items[0].get('ankama_id')
+                
+        return None
+
 async def get_item_details(ankama_id: int) -> Optional[ItemDetailsResponse]:
     async with httpx.AsyncClient() as client:
         # Fetch item details
@@ -112,6 +141,7 @@ async def get_item_details(ankama_id: int) -> Optional[ItemDetailsResponse]:
             name=item.get('name'),
             img=item.get('image_urls', {}).get('icon'),
             level=item.get('level', 1),
+            type=item.get('type', {}).get('name'),
             stats=stats,
             recipe=ingredients
         )
