@@ -20,14 +20,18 @@ class Ingredient(BaseModel):
     img: str
     quantity: int
 
+from datetime import datetime
+
 class ItemDetailsResponse(BaseModel):
     id: int
     name: str
     img: str
     level: int
+    type: Optional[str] = None
     stats: List[ItemStat]
     recipe: List[Ingredient]
     last_coefficient: Optional[float] = None
+    last_coefficient_date: Optional[datetime] = None
 
 class CalculateRequest(BaseModel):
     item_level: int           # <--- NUEVO: Vital para la fórmula de Dofus 3
@@ -57,6 +61,7 @@ class ProfitItem(BaseModel):
     min_coefficient: float
     craft_cost: float
     estimated_rune_value: float
+    value_at_100: float
     last_coefficient: Optional[float] = None
 
 class ItemCoefficientRequest(BaseModel):
@@ -68,4 +73,12 @@ class CalculateResponse(BaseModel):
     max_focus_profit: float
     best_focus_stat: Optional[str]
     breakdown: List[RuneBreakdown]
-    item_cost: float 
+    item_cost: float
+    coefficient: float 
+
+class PaginatedProfitResponse(BaseModel):
+    items: List[ProfitItem]
+    total: int
+    page: int
+    size: int
+    total_pages: int 

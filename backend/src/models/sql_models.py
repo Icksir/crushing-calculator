@@ -25,3 +25,25 @@ class ItemCoefficientHistoryModel(Base):
     item_id = Column(Integer, index=True)
     coefficient = Column(Float)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class PredictionDataset(Base):
+    __tablename__ = "prediction_dataset"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(Integer, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # --- TARGET (Y) ---
+    real_coefficient = Column(Float)
+
+    # --- FEATURES (X) ---
+    craft_cost = Column(Float)
+    rune_value_100 = Column(Float)
+    ratio_profit = Column(Float)      # X1
+    item_level = Column(Integer)      # X2
+    item_type = Column(String)        # X7
+    recipe_difficulty = Column(Integer) # X6
+    
+    day_of_week = Column(Integer)     # X4
+    hour_of_day = Column(Integer)     # X4
+    days_since_last_update = Column(Float) # X5
