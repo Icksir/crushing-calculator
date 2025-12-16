@@ -39,7 +39,7 @@ export const StatEditor: React.FC<StatEditorProps> = ({ stats, onChange }) => {
              <Label className="text-xs text-gray-500">Rune Price</Label>
              <Input 
                 type="number" 
-                value={runePrices[stat.name] || 0} 
+                value={runePrices[stat.name]?.price || 0} 
                 onChange={(e) => updatePrice(stat.name, Number(e.target.value))}
                 className="w-24"
                 placeholder="Price"
