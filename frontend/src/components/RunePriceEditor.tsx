@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins, Image as ImageIcon } from 'lucide-react';
 import { syncRuneImages } from '@/lib/api';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { formatDate } from '@/lib/utils';
 
 const COMMON_RUNES = [
   "Runa Agi",
@@ -103,12 +105,23 @@ export const RunePriceEditor = () => {
                     <span className="text-sm font-medium">{rune}</span>
                   </div>
                   <div className="flex items-center gap-1 w-24">
-                    <Input 
-                      type="number" 
-                      className="text-right h-8"
-                      value={data.price}
-                      onChange={e => updatePrice(rune, Number(e.target.value))}
-                    />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <Input 
+                              type="number" 
+                              className="text-right h-8"
+                              value={data.price}
+                              onChange={e => updatePrice(rune, Number(e.target.value))}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Actualizado: {formatDate(data.updated_at)}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <span className="text-xs text-muted-foreground">k</span>
                   </div>
                 </div>

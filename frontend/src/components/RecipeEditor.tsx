@@ -2,10 +2,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
-import { Ingredient, getIngredientPrices, updateIngredientPrices } from '@/lib/api';
+import { Ingredient, getIngredientPrices, updateIngredientPrices, IngredientPriceData } from '@/lib/api';
+import { formatNumber, formatDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RecipeEditorProps {
   recipe: Ingredient[];
@@ -13,7 +15,7 @@ interface RecipeEditorProps {
 }
 
 export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostChange }) => {
-  const [prices, setPrices] = useState<Record<number, number>>({});
+  const [prices, setPrices] = useState<Record<number, IngredientPriceData>>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch prices on mount
@@ -33,14 +35,16 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
     // Calculate total cost whenever prices change
     let total = 0;
     recipe.forEach(ing => {
-      const price = prices[ing.id] || 0;
+      const priceData = prices[ing.id];
+      const price = priceData?.price || 0;
       total += price * ing.quantity;
     });
     onTotalCostChange(total);
   }, [prices, recipe, onTotalCostChange]);
 
   const handlePriceChange = (id: number, price: number, name: string) => {
-    const newPrices = { ...prices, [id]: price };
+    const currentData = prices[id] || { price: 0 };
+    const newPrices = { ...prices, [id]: { ...currentData, price } };
     setPrices(newPrices);
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -53,10 +57,10 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
 
   if (recipe.length === 0) return null;
 
-  const totalCost = Object.entries(prices).reduce((acc, [id, price]) => {
+  const totalCost = Object.entries(prices).reduce((acc, [id, priceData]) => {
     const ing = recipe.find(i => i.id === Number(id));
     if (!ing) return acc; // Only count ingredients in current recipe
-    return acc + (price * ing.quantity);
+    return acc + (priceData.price * ing.quantity);
   }, 0);
 
   return (
@@ -88,13 +92,24 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
                   <div className="text-sm font-medium text-foreground/90 leading-tight line-clamp-2" title={ing.name}>{ing.name}</div>
                 </div>
                 <div className="w-28 flex-shrink-0">
-                  <Input 
-                    type="number" 
-                    placeholder="Precio Unit." 
-                    className="h-8 text-sm text-right px-2 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-colors no-spinner"
-                    value={prices[ing.id] || ''}
-                    onChange={(e) => handlePriceChange(ing.id, Number(e.target.value), ing.name)}
-                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Input 
+                            type="number" 
+                            placeholder="Precio Unit." 
+                            className="h-8 text-sm text-right px-2 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-colors no-spinner"
+                            value={prices[ing.id]?.price || ''}
+                            onChange={(e) => handlePriceChange(ing.id, Number(e.target.value), ing.name)}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Actualizado: {formatDate(prices[ing.id]?.updated_at)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             ))}
@@ -105,7 +120,7 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
           <div className="flex justify-between items-center">
             <span className="text-base font-medium text-muted-foreground">Total Estimado</span>
             <span className="font-bold text-xl text-primary">
-              {totalCost.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">k</span>
+              {formatNumber(totalCost)} <span className="text-sm font-normal text-muted-foreground">k</span>
             </span>
           </div>
         </div>

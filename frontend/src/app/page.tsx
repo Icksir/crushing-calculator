@@ -6,6 +6,7 @@ import { RuneTable } from '@/components/RuneTable';
 import { RecipeEditor } from '@/components/RecipeEditor';
 import { RunePriceProvider, useRunePrices } from '@/context/RunePriceContext';
 import { ItemSearchResponse, ItemStat, CalculateResponse, calculateProfit, getItemDetails, Ingredient, saveItemCoefficient } from '@/lib/api';
+import { formatNumber, formatDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Calculator as CalculatorIcon, Coins, Percent } from 'lucide-react';
+import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2 } from 'lucide-react';
 import { ResourcePriceEditor } from '@/components/ResourcePriceEditor';
 import { RunePriceEditor } from '@/components/RunePriceEditor';
 
@@ -24,10 +25,12 @@ const Calculator = () => {
   const [recipe, setRecipe] = useState<Ingredient[]>([]);
   const [cost, setCost] = useState<number>(0);
   const [coeff, setCoeff] = useState<number | ''>(100);
+  const [lastCoeffDate, setLastCoeffDate] = useState<string | null>(null);
   const [itemLevel, setItemLevel] = useState<number>(200);
   const [result, setResult] = useState<CalculateResponse | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showTop3, setShowTop3] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const { runePrices } = useRunePrices();
 
@@ -37,6 +40,7 @@ const Calculator = () => {
     setResult(null);
     setRecipe([]);
     setCoeff(''); // Reset to empty while loading
+    setLastCoeffDate(null);
     setLoadingDetails(true);
     
     try {
@@ -48,6 +52,9 @@ const Calculator = () => {
         } else {
           setCoeff(100);
         }
+        console.log("Setting date:", details.last_coefficient_date);
+        // Ensure we handle both null and undefined explicitly
+        setLastCoeffDate(details.last_coefficient_date ?? null);
         // Fix for unique values where max is missing/zero
         const processedStats = details.stats.map(stat => {
           const max = stat.max || stat.min;
@@ -96,23 +103,19 @@ const Calculator = () => {
     return () => clearTimeout(timer);
   }, [stats, cost, coeff, runePrices, selectedItem, itemLevel]);
 
-  // Save coefficient history
-  useEffect(() => {
-    if (!selectedItem) return;
-
-    const saveCoeff = async () => {
-      try {
-        if (coeff !== '') {
-          await saveItemCoefficient(selectedItem.id, coeff);
-        }
-      } catch (e) {
-        console.error("Failed to save coefficient", e);
-      }
-    };
-
-    const timer = setTimeout(saveCoeff, 2000);
-    return () => clearTimeout(timer);
-  }, [coeff, selectedItem]);
+  const handleSaveCoefficient = async () => {
+    if (!selectedItem || coeff === '') return;
+    
+    setIsSaving(true);
+    try {
+      await saveItemCoefficient(selectedItem.id, coeff);
+      setLastCoeffDate(new Date().toISOString());
+    } catch (e) {
+      console.error("Failed to save coefficient", e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const liveMetrics = useMemo(() => {
     if (!result?.breakdown) return { totalValue: 0, profit: 0, breakEvenCoeff: 0 };
@@ -138,16 +141,39 @@ const Calculator = () => {
 
     const bestTotal = Math.max(sinFocusTotal, maxFocusTotal);
     
-    // Calculate break-even coefficient
-    // If current total (at current coeff) is X, then X = BaseValue * (CurrentCoeff/100)
-    // BaseValue = X / (CurrentCoeff/100)
-    // We want NewTotal = Cost
-    // BaseValue * (NewCoeff/100) = Cost
-    // (X / (CurrentCoeff/100)) * (NewCoeff/100) = Cost
-    // X * NewCoeff / CurrentCoeff = Cost
-    // NewCoeff = (Cost * CurrentCoeff) / X
-    
-    const breakEvenCoeff = bestTotal > 0 ? (cost * (coeff === '' ? 100 : coeff)) / bestTotal : 0;
+    // Calculate break-even coefficient based on Value at 100%
+    // Use the coefficient from the result to ensure consistency
+    const resultCoeffFactor = (result.coefficient || 100) / 100;
+    let breakEvenCoeff = 0;
+
+    if (resultCoeffFactor > 0) {
+        // Recalculate totals using raw float counts to get precise ValueAt100
+        const sinFocusTotalRaw = result.breakdown.reduce((acc, item) => {
+            const currentStat = stats.find(s => s.name === item.stat);
+            if (currentStat && currentStat.value < 0) return acc;
+
+            const runeName = item.rune_name || currentStat?.rune_name || '';
+            const price = runePrices[runeName]?.price || 0;
+            return acc + (item.count * price);
+        }, 0);
+
+        const maxFocusTotalRaw = result.breakdown.reduce((max, item) => {
+            const currentStat = stats.find(s => s.name === item.stat);
+            if (currentStat && currentStat.value < 0) return max;
+
+            const runeName = item.rune_name || currentStat?.rune_name || '';
+            const price = runePrices[runeName]?.price || 0;
+            const val = (item.focus_count || 0) * price;
+            return val > max ? val : max;
+        }, 0);
+
+        const bestTotalRaw = Math.max(sinFocusTotalRaw, maxFocusTotalRaw);
+        const valueAt100 = bestTotalRaw / resultCoeffFactor;
+        
+        if (valueAt100 > 0) {
+            breakEvenCoeff = (cost / valueAt100) * 100;
+        }
+    }
 
     return {
       totalValue: bestTotal,
@@ -168,9 +194,6 @@ const Calculator = () => {
           <div className="flex-1 max-w-md">
              <ItemSearch onSelect={handleSelect} />
           </div>
-          <div className="ml-auto flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="hidden sm:inline-block">Dofus 3.4 Calculator</span>
-          </div>
         </div>
       </header>
 
@@ -186,10 +209,10 @@ const Calculator = () => {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Item Header & Controls */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Item Info Card */}
-              <Card className="lg:col-span-2 border-none shadow-lg bg-gradient-to-br from-card to-muted/20 overflow-hidden relative">
-                <CardContent className="p-0 flex flex-col md:flex-row relative z-10">
-                  <div className="flex-1 p-6 md:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            {/* Item Info Card */}
+            <Card className="lg:col-span-2 border-none shadow-lg bg-gradient-to-br from-card to-muted/20 relative">
+              <CardContent className="p-0 flex flex-col md:flex-row relative z-10">
+                <div className="flex-1 p-6 md:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
                     <div className="relative group">
                       <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
                       <div className="relative bg-card rounded-xl p-2 border shadow-sm">
@@ -230,30 +253,47 @@ const Calculator = () => {
                             type="number" 
                             value={cost} 
                             onChange={(e) => setCost(Number(e.target.value))} 
-                            className="h-8 w-full text-right font-mono text-xl border-none shadow-none focus-visible:ring-0 p-0 bg-transparent no-spinner"
+                            className="h-8 w-full text-right font-mono text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-2 bg-transparent no-spinner"
                           />
                           <span className="text-base font-bold">K</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-background/80 p-3 rounded-lg border shadow-sm">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-md text-blue-700 dark:text-blue-500">
-                        <Percent size={20} />
-                      </div>
-                      <div className="flex flex-col flex-1">
-                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">Coeficiente</span>
-                        <div className="flex items-center gap-1">
-                          <Input 
-                            type="number" 
-                            value={coeff} 
-                            onChange={(e) => setCoeff(e.target.value === '' ? '' : Number(e.target.value))} 
-                            className="h-8 w-full text-right font-bold text-xl border-none shadow-none focus-visible:ring-0 p-0 bg-transparent no-spinner"
-                            placeholder={loadingDetails ? "---" : "100"}
-                          />
-                          <span className="text-base font-bold">%</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-3 bg-background/80 p-3 rounded-lg border shadow-sm">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-md text-blue-700 dark:text-blue-500">
+                          <Percent size={20} />
+                        </div>
+                        <div className="flex flex-col flex-1">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground">Coeficiente</span>
+                          <div className="flex items-center gap-1">
+                            <Input 
+                              type="number" 
+                              value={coeff} 
+                              onChange={(e) => setCoeff(e.target.value === '' ? '' : Number(e.target.value))} 
+                              className="h-8 w-full text-right font-bold text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-2 bg-transparent no-spinner"
+                              placeholder={loadingDetails ? "---" : "100"}
+                            />
+                            <span className="text-base font-bold">%</span>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 ml-1 text-muted-foreground hover:text-primary"
+                              onClick={handleSaveCoefficient}
+                              disabled={isSaving || coeff === ''}
+                              title="Guardar Coeficiente"
+                            >
+                              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                            </Button>
+                          </div>
                         </div>
                       </div>
+                      {lastCoeffDate && (
+                        <div className="text-[10px] text-muted-foreground text-right px-1">
+                          Actualizado: {formatDate(lastCoeffDate)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -268,7 +308,7 @@ const Calculator = () => {
                 <CardContent>
                   <div className="flex flex-col gap-1">
                     <div className={`text-5xl font-black tracking-tighter ${liveMetrics.profit > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {result ? `${liveMetrics.profit.toLocaleString()}` : '---'} <span className="text-xl font-normal text-muted-foreground">k</span>
+                      {result ? `${formatNumber(liveMetrics.profit)}` : '---'} <span className="text-xl font-normal text-muted-foreground">k</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Mejor escenario (Sin Focus o Con Focus) vs Costo.
@@ -279,12 +319,12 @@ const Calculator = () => {
                     <div className="mt-6 space-y-2">
                       <div className="flex justify-between text-base">
                         <span className="text-muted-foreground">Valor Runas (Max):</span>
-                        <span className="font-medium">{liveMetrics.totalValue.toLocaleString()} k</span>
+                        <span className="font-medium">{formatNumber(liveMetrics.totalValue)} k</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between text-base">
                         <span className="text-muted-foreground">Costo Craft:</span>
-                        <span className="font-medium">{cost.toLocaleString()} k</span>
+                        <span className="font-medium">{formatNumber(cost)} k</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between text-base items-center pt-1">

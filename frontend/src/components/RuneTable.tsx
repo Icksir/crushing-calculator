@@ -6,6 +6,8 @@ import { ItemStat, RuneBreakdown } from '@/lib/api';
 import { useRunePrices } from '@/context/RunePriceContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatNumber, formatDate } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RuneTableProps {
   stats: ItemStat[];
@@ -52,14 +54,17 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
 
   const globalMax = Math.max(totalSinFocus, maxFocusVal);
 
-  // Calculate sorted unique values for ranking
-  const sortedFocusValues = Array.from(new Set(rows.map(({ stat, result }) => {
-    if (stat.value < 0) return 0;
-    const count = result?.focus_count || 0;
-    const runeName = result?.rune_name || stat.rune_name || '';
-    const price = runePrices[runeName]?.price || 0;
-    return Math.floor(count * price);
-  }))).sort((a, b) => b - a).filter(v => v > 0);
+  // Calculate sorted unique values for ranking (including Total Sin Focus)
+  const sortedValues = Array.from(new Set([
+    totalSinFocus,
+    ...rows.map(({ stat, result }) => {
+      if (stat.value < 0) return 0;
+      const count = result?.focus_count || 0;
+      const runeName = result?.rune_name || stat.rune_name || '';
+      const price = runePrices[runeName]?.price || 0;
+      return Math.floor(count * price);
+    })
+  ])).sort((a, b) => b - a).filter(v => v > 0);
 
   return (
     <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -135,16 +140,27 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
               </TableCell>
               <TableCell>
                 <div className="relative">
-                  <Input 
-                    type="number" 
-                    className="w-24 h-8 pr-6 text-right font-mono text-sm"
-                    value={runePrices[result?.rune_name || stat.rune_name || '']?.price || 0}
-                    onChange={(e) => {
-                      const runeName = result?.rune_name || stat.rune_name;
-                      if (runeName) updatePrice(runeName, Number(e.target.value));
-                    }}
-                  />
-                  <span className="absolute right-2 top-2 text-[10px] text-muted-foreground">k</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Input 
+                            type="number" 
+                            className="w-24 h-8 pr-6 text-right font-mono text-sm"
+                            value={runePrices[result?.rune_name || stat.rune_name || '']?.price || 0}
+                            onChange={(e) => {
+                              const runeName = result?.rune_name || stat.rune_name;
+                              if (runeName) updatePrice(runeName, Number(e.target.value));
+                            }}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Actualizado: {formatDate(runePrices[result?.rune_name || stat.rune_name || '']?.updated_at)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span className="absolute right-2 top-2 text-[10px] text-muted-foreground pointer-events-none">k</span>
                 </div>
               </TableCell>
               
@@ -165,7 +181,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
                   const price = runePrices[runeName]?.price || 0;
                   const total = Math.floor(count * price);
                   return total > 0 ? (
-                    <span className="text-blue-700 dark:text-blue-400">{total.toLocaleString()} k</span>
+                    <span className="text-blue-700 dark:text-blue-400">{formatNumber(total)} k</span>
                   ) : (
                     <span className="text-muted-foreground/30">-</span>
                   );
@@ -205,9 +221,9 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
                   
                   if (total > 0) {
                     if (showTop3) {
-                        if (total === sortedFocusValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-lg font-black animate-pulse';
-                        else if (total === sortedFocusValues[1]) styleClass = 'text-orange-600 dark:text-orange-400 text-lg font-bold animate-pulse';
-                        else if (total === sortedFocusValues[2]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-lg font-bold animate-pulse';
+                        if (total === sortedValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-lg font-black animate-pulse';
+                        else if (total === sortedValues[1]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-lg font-bold animate-pulse';
+                        else if (total === sortedValues[2]) styleClass = 'text-orange-600 dark:text-orange-400 text-lg font-bold animate-pulse';
                     } else {
                         if (total === globalMax) styleClass = 'text-green-600 dark:text-green-400 text-lg animate-pulse';
                     }
@@ -215,7 +231,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
                   
                   return total > 0 ? (
                     <span className={styleClass}>
-                      {total.toLocaleString()} k
+                      {formatNumber(total)} k
                     </span>
                   ) : (
                     <span className="text-muted-foreground/30">-</span>
@@ -230,9 +246,23 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
             </TableCell>
             <TableCell className="border-l border-border/50 bg-blue-50/20 dark:bg-blue-950/10"></TableCell>
             <TableCell className="text-right text-lg border-r border-border/50 bg-blue-50/20 dark:bg-blue-950/10">
-               <span className={`${totalSinFocus > 0 && totalSinFocus === globalMax ? 'text-green-600 dark:text-green-400 text-xl animate-pulse' : 'text-blue-700 dark:text-blue-400'}`}>
-                 {totalSinFocus.toLocaleString()} k
-               </span>
+               {(() => {
+                 let styleClass = 'text-blue-700 dark:text-blue-400';
+                 if (totalSinFocus > 0) {
+                   if (showTop3) {
+                      if (totalSinFocus === sortedValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-xl font-black animate-pulse';
+                      else if (totalSinFocus === sortedValues[1]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-xl font-bold animate-pulse';
+                      else if (totalSinFocus === sortedValues[2]) styleClass = 'text-orange-600 dark:text-orange-400 text-xl font-bold animate-pulse';
+                   } else {
+                      if (totalSinFocus === globalMax) styleClass = 'text-green-600 dark:text-green-400 text-xl animate-pulse';
+                   }
+                 }
+                 return (
+                   <span className={styleClass}>
+                     {formatNumber(totalSinFocus)} k
+                   </span>
+                 );
+               })()}
             </TableCell>
             <TableCell colSpan={2} className="bg-purple-50/20 dark:bg-purple-950/10"></TableCell>
           </TableRow>
