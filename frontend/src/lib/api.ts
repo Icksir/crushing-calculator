@@ -7,6 +7,7 @@ export const api = axios.create({
 export interface RunePriceData {
   price: number;
   image_url?: string | null;
+  updated_at?: string | null;
 }
 
 export const getRunePrices = async () => {
@@ -23,8 +24,13 @@ export const updateRunePrices = async (prices: Record<string, number>) => {
   await api.post('/api/prices/runes', { prices });
 };
 
+export interface IngredientPriceData {
+  price: number;
+  updated_at?: string | null;
+}
+
 export const getIngredientPrices = async () => {
-  const res = await api.get<Record<number, number>>('/api/prices/ingredients');
+  const res = await api.get<Record<number, IngredientPriceData>>('/api/prices/ingredients');
   return res.data;
 };
 
@@ -55,16 +61,30 @@ export interface ProfitItem {
   min_coefficient: number;
   craft_cost: number;
   estimated_rune_value: number;
+  value_at_100: number;
   last_coefficient?: number;
 }
 
-export const getBestProfitItems = async (types: string[], minLevel: number, maxLevel: number, minProfit: number = 0) => {
-  const res = await api.get<ProfitItem[]>('/api/items/profit/best', {
+export interface PaginatedProfitResponse {
+  items: ProfitItem[];
+  total: number;
+  page: number;
+  size: number;
+  total_pages: number;
+}
+
+export const getBestProfitItems = async (types: string[], minLevel: number, maxLevel: number, minProfit: number = 0, minCraftCost: number = 0, page: number = 1, limit: number = 10, sortBy: string = 'profit', sortOrder: string = 'desc') => {
+  const res = await api.get<PaginatedProfitResponse>('/api/items/profit/best', {
     params: {
       types: types.join(','),
       min_level: minLevel,
       max_level: maxLevel,
-      min_profit: minProfit
+      min_profit: minProfit,
+      min_craft_cost: minCraftCost,
+      page,
+      limit,
+      sort_by: sortBy,
+      sort_order: sortOrder
     }
   });
   return res.data;
@@ -101,6 +121,7 @@ export interface ItemDetailsResponse {
   stats: ItemStat[];
   recipe: Ingredient[];
   last_coefficient?: number;
+  last_coefficient_date?: string | null;
 }
 
 export interface CalculateRequest {
@@ -134,6 +155,7 @@ export interface CalculateResponse {
   best_focus_stat: string | null;
   breakdown: RuneBreakdown[];
   item_cost: number;
+  coefficient: number;
 }
 
 export const searchItems = async (query: string) => {
