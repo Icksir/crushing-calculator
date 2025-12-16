@@ -1,0 +1,39 @@
+[project]
+name = "dofus-crushing-calculator-backend"
+version = "0.1.0"
+description = "Backend for Dofus 3.4 Crushing Calculator"
+authors = [
+    {name = "Ricardo",email = "ricky_olalquiaga@hotmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+
+dependencies = [
+    "fastapi (>=0.124.4,<0.125.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "uvicorn (>=0.38.0,<0.39.0)",
+    "sqlalchemy (>=2.0.45,<3.0.0)",
+    "asyncpg (>=0.31.0,<0.32.0)",
+    "opencv-python (>=4.12.0.88,<5.0.0.0)",
+    "pytesseract (>=0.3.13,<0.4.0)",
+    "pillow (>=12.0.0,<13.0.0)",
+    "pyautogui (>=0.9.54,<0.10.0)"
+]
+
+[tool.poetry]
+packages = [
+    {include = "api", from = "src"},
+    {include = "models", from = "src"},
+    {include = "services", from = "src"},
+    {include = "settings", from = "src"},
+    {include = "tests"},
+    {include = "db", from = "src"}
+    ]
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
