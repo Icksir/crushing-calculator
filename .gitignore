@@ -1,0 +1,46 @@
+# General
+.DS_Store
+.vscode/
+*.log
+.idea/
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+.env.*
+*.egg-info/
+.coverage
+.pytest_cache/
+htmlcov/
+dist/
+build/
+develop-eggs/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+share/python-wheels/
+*.egg
+MANIFEST
+.mypy_cache/
+
+# Node / Frontend
+node_modules/
+.next/
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS
+Thumbs.db
