@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRunePrices } from '@/context/RunePriceContext';
 
 interface RecipeEditorProps {
   recipe: Ingredient[];
@@ -19,19 +20,20 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
   const [prices, setPrices] = useState<Record<number, IngredientPriceData>>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { t } = useLanguage();
+  const { server } = useRunePrices();
 
   // Fetch prices on mount
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        const storedPrices = await getIngredientPrices();
+        const storedPrices = await getIngredientPrices(server);
         setPrices(storedPrices);
       } catch (e) {
         console.error("Failed to fetch ingredient prices", e);
       }
     };
     fetchPrices();
-  }, []);
+  }, [server]);
 
   useEffect(() => {
     // Calculate total cost whenever prices change
@@ -52,7 +54,7 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     
     timeoutRef.current = setTimeout(() => {
-      updateIngredientPrices([{ item_id: id, price, name }])
+      updateIngredientPrices([{ item_id: id, price, name }], server)
         .catch(e => console.error("Failed to save ingredient price", e));
     }, 1000);
   };

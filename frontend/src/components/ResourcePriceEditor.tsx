@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { formatNumber, formatDate } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRunePrices } from '@/context/RunePriceContext';
 
 const PROFESSIONS = [
   { name: 'Blacksmith', types: ['Sword', 'Dagger', 'Hammer', 'Shovel', 'Axe', 'Scythe', 'Pickaxe'] },
@@ -44,11 +45,12 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
   const [totalPages, setTotalPages] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
   const { t, language } = useLanguage();
+  const { server } = useRunePrices();
 
   // Load initial prices
   useEffect(() => {
-    getIngredientPrices().then(setPrices).catch(console.error);
-  }, []);
+    getIngredientPrices(server).then(setPrices).catch(console.error);
+  }, [server]);
 
   const fetchProfitItems = async (page: number, currentSortBy = sortBy, currentSortOrder = sortOrder) => {
     setCalculatingProfit(true);
@@ -56,7 +58,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
       const profession = PROFESSIONS.find(p => p.name === selectedProfession);
       if (!profession) return;
       
-      const data = await getBestProfitItems(profession.types, minLevel, maxLevel, 0, minCostFilter, page, 10, currentSortBy, currentSortOrder, language);
+      const data = await getBestProfitItems(profession.types, minLevel, maxLevel, 0, minCostFilter, page, 10, currentSortBy, currentSortOrder, language, server);
       setProfitItems(data.items);
       setTotalPages(data.total_pages);
       setCurrentPage(data.page);
@@ -149,7 +151,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
         .filter(r => prices[r.id] !== undefined)
         .map(r => ({ item_id: r.id, price: prices[r.id].price, name: r.name }));
       
-      await updateIngredientPrices(updates);
+      await updateIngredientPrices(updates, server);
       setHasChanges(false);
     } catch (error) {
       console.error("Failed to save prices", error);

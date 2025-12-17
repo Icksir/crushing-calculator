@@ -26,10 +26,11 @@ async def get_best_profit_items(
     sort_by: str = "profit",
     sort_order: str = "desc",
     lang: str = "es",
+    server: str = "Dakal",
     db: AsyncSession = Depends(get_db)
 ):
     type_list = types.split(",")
-    return await calculate_profitability(type_list, min_level, max_level, min_profit, min_craft_cost, page, limit, sort_by, sort_order, db, lang)
+    return await calculate_profitability(type_list, min_level, max_level, min_profit, min_craft_cost, page, limit, sort_by, sort_order, db, lang, server)
 
 @router.get("/items/search", response_model=List[ItemSearchResponse])
 async def search_items_endpoint(query: str = Query(..., min_length=2), lang: str = "es"):
@@ -46,14 +47,15 @@ async def get_ingredients_filter(
     return await get_ingredients_by_filter(type_list, min_level, max_level, lang)
 
 @router.get("/items/{ankama_id}", response_model=ItemDetailsResponse)
-async def get_item_details_endpoint(ankama_id: int, lang: str = "es", db: AsyncSession = Depends(get_db)):
+async def get_item_details_endpoint(ankama_id: int, lang: str = "es", server: str = "Dakal", db: AsyncSession = Depends(get_db)):
     item = await get_item_details(ankama_id, lang)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
         
     # Fetch latest coefficient
     query = select(ItemCoefficientHistoryModel).where(
-        ItemCoefficientHistoryModel.item_id == ankama_id
+        ItemCoefficientHistoryModel.item_id == ankama_id,
+        ItemCoefficientHistoryModel.server == server
     ).order_by(desc(ItemCoefficientHistoryModel.created_at)).limit(1)
     
     result = await db.execute(query)
@@ -73,12 +75,14 @@ async def save_item_coefficient(
     ankama_id: int, 
     request: ItemCoefficientRequest, 
     lang: str = "es",
+    server: str = "Dakal",
     db: AsyncSession = Depends(get_db)
 ):
     # 1. Save History
     new_entry = ItemCoefficientHistoryModel(
         item_id=ankama_id,
-        coefficient=request.coefficient
+        coefficient=request.coefficient,
+        server=server
     )
     db.add(new_entry)
     
@@ -91,10 +95,10 @@ async def save_item_coefficient(
             return {"status": "success", "warning": "Item details not found for prediction"}
 
         # B. Get Prices
-        ing_prices_res = await db.execute(select(IngredientPriceModel))
+        ing_prices_res = await db.execute(select(IngredientPriceModel).where(IngredientPriceModel.server == server))
         ing_prices = {row.IngredientPriceModel.item_id: row.IngredientPriceModel.price for row in ing_prices_res}
         
-        rune_prices_res = await db.execute(select(RunePriceModel))
+        rune_prices_res = await db.execute(select(RunePriceModel).where(RunePriceModel.server == server))
         rune_prices = {row.RunePriceModel.rune_name: row.RunePriceModel.price for row in rune_prices_res}
 
         # C. Calculate Craft Cost

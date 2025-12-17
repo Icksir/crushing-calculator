@@ -27,6 +27,11 @@ async def search_equipment(query: str, lang: str = "es") -> List[ItemSearchRespo
                     type_name = effect.get('type', {}).get('name')
                     if not type_name:
                         continue
+                    
+                    # Ignorar modificaciones de hechizos (empiezan con :)
+                    if type_name.strip().startswith(':'):
+                        continue
+
                     value = effect.get('int_maximum', 0)
                     min_val = effect.get('int_minimum', 0)
                     max_val = effect.get('int_maximum', 0)
@@ -97,6 +102,11 @@ async def get_item_details(ankama_id: int, lang: str = "es") -> Optional[ItemDet
             type_name = effect.get('type', {}).get('name')
             if not type_name:
                 continue
+            
+            # Ignorar modificaciones de hechizos (empiezan con :)
+            if type_name.strip().startswith(':'):
+                continue
+
             value = effect.get('int_maximum', 0)
             min_val = effect.get('int_minimum', 0)
             max_val = effect.get('int_maximum', 0)

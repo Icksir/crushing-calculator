@@ -7,17 +7,17 @@ from src.services.equipment import fetch_raw_equipment
 from src.services.calculator import get_rune_info, get_stat_density
 from src.models.schemas import ProfitItem, PaginatedProfitResponse
 
-async def calculate_profitability(types: List[str], min_level: int, max_level: int, min_profit: int, min_craft_cost: int, page: int, limit: int, sort_by: str, sort_order: str, db: AsyncSession, lang: str) -> PaginatedProfitResponse:
+async def calculate_profitability(types: List[str], min_level: int, max_level: int, min_profit: int, min_craft_cost: int, page: int, limit: int, sort_by: str, sort_order: str, db: AsyncSession, lang: str, server: str = "Dakal") -> PaginatedProfitResponse:
     # 1. Fetch items
     items = await fetch_raw_equipment(types, min_level, max_level)
     if not items:
         return []
 
     # 2. Fetch prices
-    ing_prices_result = await db.execute(select(IngredientPriceModel))
+    ing_prices_result = await db.execute(select(IngredientPriceModel).where(IngredientPriceModel.server == server))
     ing_prices = {row.IngredientPriceModel.item_id: row.IngredientPriceModel.price for row in ing_prices_result}
     
-    rune_prices_result = await db.execute(select(RunePriceModel))
+    rune_prices_result = await db.execute(select(RunePriceModel).where(RunePriceModel.server == server))
     rune_prices = {row.RunePriceModel.rune_name: row.RunePriceModel.price for row in rune_prices_result}
 
     # 3. Fetch latest coefficients for all items
@@ -29,7 +29,10 @@ async def calculate_profitability(types: List[str], min_level: int, max_level: i
         subq = select(
             ItemCoefficientHistoryModel.item_id,
             func.max(ItemCoefficientHistoryModel.created_at).label('max_date')
-        ).where(ItemCoefficientHistoryModel.item_id.in_(item_ids)).group_by(ItemCoefficientHistoryModel.item_id).subquery()
+        ).where(
+            ItemCoefficientHistoryModel.item_id.in_(item_ids),
+            ItemCoefficientHistoryModel.server == server
+        ).group_by(ItemCoefficientHistoryModel.item_id).subquery()
         
         # Join to get the coefficient
         query = select(ItemCoefficientHistoryModel.item_id, ItemCoefficientHistoryModel.coefficient).join(

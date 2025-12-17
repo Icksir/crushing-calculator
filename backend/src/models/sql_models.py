@@ -6,6 +6,7 @@ class RunePriceModel(Base):
     __tablename__ = "rune_prices"
 
     rune_name = Column(String, primary_key=True, index=True)
+    server = Column(String, primary_key=True, default="Dakal")
     price = Column(Integer, default=0)
     image_url = Column(String, nullable=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -14,6 +15,7 @@ class IngredientPriceModel(Base):
     __tablename__ = "ingredient_prices"
 
     item_id = Column(Integer, primary_key=True, index=True)
+    server = Column(String, primary_key=True, default="Dakal")
     name = Column(String, nullable=True) # Optional, for readability
     price = Column(Integer, default=0)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -23,6 +25,7 @@ class ItemCoefficientHistoryModel(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     item_id = Column(Integer, index=True)
+    server = Column(String, default="Dakal", index=True)
     coefficient = Column(Float)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

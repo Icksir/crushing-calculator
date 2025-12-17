@@ -40,6 +40,7 @@ class CalculateRequest(BaseModel):
     item_cost: float
     rune_prices: Dict[str, float]
     lang: str = "es"
+    server: str = "Dakal"
 
 class RuneBreakdown(BaseModel):
     stat: str

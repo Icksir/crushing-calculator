@@ -10,20 +10,20 @@ export interface RunePriceData {
   updated_at?: string | null;
 }
 
-export const getRunePrices = async (lang: string = "es") => {
+export const getRunePrices = async (lang: string = "es", server: string = "Dakal") => {
   const res = await api.get<Record<string, RunePriceData>>('/api/prices/runes', {
-    params: { lang }
+    params: { lang, server }
   });
   return res.data;
 };
 
-export const syncRuneImages = async () => {
-  const res = await api.post('/api/prices/runes/sync-images');
+export const syncRuneImages = async (server: string = "Dakal") => {
+  const res = await api.post('/api/prices/runes/sync-images', {}, { params: { server } });
   return res.data;
 };
 
-export const updateRunePrices = async (prices: Record<string, number>, lang: string = "es") => {
-  await api.post('/api/prices/runes', { prices }, { params: { lang } });
+export const updateRunePrices = async (prices: Record<string, number>, lang: string = "es", server: string = "Dakal") => {
+  await api.post('/api/prices/runes', { prices }, { params: { lang, server } });
 };
 
 export interface IngredientPriceData {
@@ -31,17 +31,17 @@ export interface IngredientPriceData {
   updated_at?: string | null;
 }
 
-export const getIngredientPrices = async () => {
-  const res = await api.get<Record<number, IngredientPriceData>>('/api/prices/ingredients');
+export const getIngredientPrices = async (server: string = "Dakal") => {
+  const res = await api.get<Record<number, IngredientPriceData>>('/api/prices/ingredients', { params: { server } });
   return res.data;
 };
 
-export const updateIngredientPrices = async (updates: { item_id: number; price: number; name?: string }[]) => {
-  await api.post('/api/prices/ingredients', updates);
+export const updateIngredientPrices = async (updates: { item_id: number; price: number; name?: string }[], server: string = "Dakal") => {
+  await api.post('/api/prices/ingredients', updates, { params: { server } });
 };
 
-export const saveItemCoefficient = async (itemId: number, coefficient: number, lang: string = "es") => {
-  await api.post(`/api/items/${itemId}/coefficient?lang=${lang}`, { coefficient });
+export const saveItemCoefficient = async (itemId: number, coefficient: number, lang: string = "es", server: string = "Dakal") => {
+  await api.post(`/api/items/${itemId}/coefficient`, { coefficient }, { params: { lang, server } });
 };
 
 export const getIngredientsByFilter = async (types: string[], minLevel: number, maxLevel: number, lang: string = "es") => {
@@ -76,7 +76,7 @@ export interface PaginatedProfitResponse {
   total_pages: number;
 }
 
-export const getBestProfitItems = async (types: string[], minLevel: number, maxLevel: number, minProfit: number = 0, minCraftCost: number = 0, page: number = 1, limit: number = 10, sortBy: string = 'profit', sortOrder: string = 'desc', lang: string = "es") => {
+export const getBestProfitItems = async (types: string[], minLevel: number, maxLevel: number, minProfit: number = 0, minCraftCost: number = 0, page: number = 1, limit: number = 10, sortBy: string = 'profit', sortOrder: string = 'desc', lang: string = "es", server: string = "Dakal") => {
   const res = await api.get<PaginatedProfitResponse>('/api/items/profit/best', {
     params: {
       types: types.join(','),
@@ -89,6 +89,7 @@ export const getBestProfitItems = async (types: string[], minLevel: number, maxL
       sort_by: sortBy,
       sort_order: sortOrder,
       lang,
+      server,
     }
   });
   return res.data;
@@ -135,6 +136,7 @@ export interface CalculateRequest {
   item_cost: number;
   rune_prices: Record<string, number>;
   lang?: string;
+  server?: string;
 }
 
 export interface RuneBreakdown {
@@ -168,8 +170,8 @@ export const searchItems = async (query: string, lang: string = "es") => {
   return response.data;
 };
 
-export const getItemDetails = async (id: number, lang: string = "es") => {
-  const response = await api.get<ItemDetailsResponse>(`/api/items/${id}?lang=${lang}`);
+export const getItemDetails = async (id: number, lang: string = "es", server: string = "Dakal") => {
+  const response = await api.get<ItemDetailsResponse>(`/api/items/${id}`, { params: { lang, server } });
   return response.data;
 };
 

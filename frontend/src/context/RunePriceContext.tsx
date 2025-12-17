@@ -8,6 +8,8 @@ interface RunePriceContextType {
   isLoading: boolean;
   updatePrice: (stat: string, price: number) => void;
   refreshPrices: () => Promise<void>;
+  server: string;
+  setServer: (server: string) => void;
 }
 
 const RunePriceContext = createContext<RunePriceContextType | undefined>(undefined);
@@ -16,12 +18,25 @@ export const RunePriceProvider = ({ children }: { children: React.ReactNode }) =
   const { language, isInitialized } = useLanguage();
   const [runePrices, setRunePrices] = useState<Record<string, RunePriceData>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [server, setServerState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selectedServer') || 'Dakal';
+    }
+    return 'Dakal';
+  });
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchPrices = async (lang: string) => {
+  const setServer = (newServer: string) => {
+    setServerState(newServer);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedServer', newServer);
+    }
+  };
+
+  const fetchPrices = async (lang: string, srv: string) => {
     setIsLoading(true);
     try {
-      const prices = await getRunePrices(lang);
+      const prices = await getRunePrices(lang, srv);
       setRunePrices(prices);
     } catch (e) {
       console.error("Failed to fetch rune prices", e);
@@ -33,9 +48,9 @@ export const RunePriceProvider = ({ children }: { children: React.ReactNode }) =
 
   useEffect(() => {
     if (isInitialized) {
-      fetchPrices(language);
+      fetchPrices(language, server);
     }
-  }, [language, isInitialized]);
+  }, [language, isInitialized, server]);
 
   const updatePrice = (stat: string, price: number) => {
     // Do not allow updates while loading to prevent race conditions
@@ -52,12 +67,19 @@ export const RunePriceProvider = ({ children }: { children: React.ReactNode }) =
       Object.entries(newPrices).forEach(([key, val]) => {
         pricesOnly[key] = val.price;
       });
-      updateRunePrices(pricesOnly, language).catch(e => console.error("Failed to save prices", e));
+      updateRunePrices(pricesOnly, language, server).catch(e => console.error("Failed to save prices", e));
     }, 1000);
   };
 
   return (
-    <RunePriceContext.Provider value={{ runePrices, isLoading, updatePrice, refreshPrices: () => fetchPrices(language) }}>
+    <RunePriceContext.Provider value={{ 
+      runePrices, 
+      isLoading, 
+      updatePrice, 
+      refreshPrices: () => fetchPrices(language, server),
+      server,
+      setServer
+    }}>
       {children}
     </RunePriceContext.Provider>
   );
