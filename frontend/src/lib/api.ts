@@ -10,8 +10,10 @@ export interface RunePriceData {
   updated_at?: string | null;
 }
 
-export const getRunePrices = async () => {
-  const res = await api.get<Record<string, RunePriceData>>('/api/prices/runes');
+export const getRunePrices = async (lang: string = "es") => {
+  const res = await api.get<Record<string, RunePriceData>>('/api/prices/runes', {
+    params: { lang }
+  });
   return res.data;
 };
 
@@ -20,8 +22,8 @@ export const syncRuneImages = async () => {
   return res.data;
 };
 
-export const updateRunePrices = async (prices: Record<string, number>) => {
-  await api.post('/api/prices/runes', { prices });
+export const updateRunePrices = async (prices: Record<string, number>, lang: string = "es") => {
+  await api.post('/api/prices/runes', { prices }, { params: { lang } });
 };
 
 export interface IngredientPriceData {
@@ -38,16 +40,17 @@ export const updateIngredientPrices = async (updates: { item_id: number; price: 
   await api.post('/api/prices/ingredients', updates);
 };
 
-export const saveItemCoefficient = async (itemId: number, coefficient: number) => {
-  await api.post(`/api/items/${itemId}/coefficient`, { coefficient });
+export const saveItemCoefficient = async (itemId: number, coefficient: number, lang: string = "es") => {
+  await api.post(`/api/items/${itemId}/coefficient?lang=${lang}`, { coefficient });
 };
 
-export const getIngredientsByFilter = async (types: string[], minLevel: number, maxLevel: number) => {
+export const getIngredientsByFilter = async (types: string[], minLevel: number, maxLevel: number, lang: string = "es") => {
   const res = await api.get<Ingredient[]>('/api/items/ingredients/filter', {
     params: {
       types: types.join(','),
       min_level: minLevel,
-      max_level: maxLevel
+      max_level: maxLevel,
+      lang,
     }
   });
   return res.data;
@@ -73,7 +76,7 @@ export interface PaginatedProfitResponse {
   total_pages: number;
 }
 
-export const getBestProfitItems = async (types: string[], minLevel: number, maxLevel: number, minProfit: number = 0, minCraftCost: number = 0, page: number = 1, limit: number = 10, sortBy: string = 'profit', sortOrder: string = 'desc') => {
+export const getBestProfitItems = async (types: string[], minLevel: number, maxLevel: number, minProfit: number = 0, minCraftCost: number = 0, page: number = 1, limit: number = 10, sortBy: string = 'profit', sortOrder: string = 'desc', lang: string = "es") => {
   const res = await api.get<PaginatedProfitResponse>('/api/items/profit/best', {
     params: {
       types: types.join(','),
@@ -84,7 +87,8 @@ export const getBestProfitItems = async (types: string[], minLevel: number, maxL
       page,
       limit,
       sort_by: sortBy,
-      sort_order: sortOrder
+      sort_order: sortOrder,
+      lang,
     }
   });
   return res.data;
@@ -130,6 +134,7 @@ export interface CalculateRequest {
   coefficient: number;
   item_cost: number;
   rune_prices: Record<string, number>;
+  lang?: string;
 }
 
 export interface RuneBreakdown {
@@ -158,13 +163,13 @@ export interface CalculateResponse {
   coefficient: number;
 }
 
-export const searchItems = async (query: string) => {
-  const response = await api.get<ItemSearchResponse[]>(`/api/items/search?query=${query}`);
+export const searchItems = async (query: string, lang: string = "es") => {
+  const response = await api.get<ItemSearchResponse[]>(`/api/items/search?query=${query}&lang=${lang}`);
   return response.data;
 };
 
-export const getItemDetails = async (id: number) => {
-  const response = await api.get<ItemDetailsResponse>(`/api/items/${id}`);
+export const getItemDetails = async (id: number, lang: string = "es") => {
+  const response = await api.get<ItemDetailsResponse>(`/api/items/${id}?lang=${lang}`);
   return response.data;
 };
 
