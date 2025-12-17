@@ -1,0 +1,354 @@
+'use client';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+type Language = 'es' | 'en' | 'fr';
+
+interface LanguageContextType {
+  language: Language;
+  isInitialized: boolean;
+  setLanguage: (language: Language) => void;
+  t: (key: string) => string;
+}
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+const translations: Record<Language, Record<string, string>> = {
+  es: {
+    // General
+    calculator: 'Calculadora',
+    rune_prices: 'Precios Runas',
+    resource_prices: 'Precios Recursos',
+    level: 'Nivel',
+    search_object: 'Buscar objeto (ej: Nidas)...',
+    no_results: 'No se encontraron resultados.',
+    loading: 'Cargando...',
+
+    // Calculator Page
+    page_description: 'Ajusta las estadísticas y el precio para calcular el beneficio de rompimiento.',
+    object_cost: 'Costo Objeto',
+    coefficient: 'Coeficiente',
+    save_coefficient: 'Guardar Coeficiente',
+    estimated_profit_max: 'Beneficio Estimado (Max)',
+    profit_description: 'Mejor escenario (Sin Focus o Con Focus) vs Costo.',
+    max_rune_value: 'Valor Runas (Max):',
+    craft_cost: 'Costo Craft:',
+    min_coefficient: 'Coeficiente Mínimo:',
+    no_item_found: 'No se ha encontrado un objeto. Utiliza el buscador para empezar.',
+    crushing_calculator_title: 'Calculadora de Rompimiento',
+
+    // Rune Table
+    characteristic: 'Característica',
+    roll: 'Tirada',
+    rune: 'Runa',
+    unit_price: 'Precio Unit.',
+    without_focus: 'Sin Focus',
+    with_focus: 'Con Focus',
+    stat: 'Stat',
+    roll_values: 'Min · Actual · Max',
+    type: 'Tipo',
+    kamas: 'Kamas',
+    quantity: 'Cant.',
+    total: 'Total',
+    total_without_focus: 'Total Sin Focus',
+    rune_breakdown: 'Desglose de Runas',
+    rune_breakdown_desc: 'Ajusta las tiradas para ver el resultado exacto.',
+    
+    // Recipe Editor
+    recipe_cost: 'Costo de Receta',
+    unit_price_placeholder: 'Precio Unit.',
+    total_cost: 'Costo Total',
+
+    // Rune Price Editor
+    rune_prices_title: 'Precios de Runas',
+    
+    // Resource Price Editor
+    search_filters: 'Filtros de Búsqueda',
+    profession: 'Profesión',
+    min_level: 'Nivel Mínimo',
+    max_level: 'Nivel Máximo',
+    load: 'Cargar',
+    force_reload: 'Forzar recarga',
+    search_opportunities: 'Buscar Oportunidades',
+    resources: 'Recursos',
+    save_changes: 'Guardar Cambios',
+    mark_unavailable: 'Marcar como no disponible',
+    mark_available: 'Marcar como disponible',
+    opportunities: 'Oportunidades',
+    analysis_mode: 'Modo Análisis',
+    min_cost: 'Costo Mínimo:',
+    sort_by: 'Ordenar por:',
+    profit: 'Profit',
+    risk: 'Riesgo',
+    asc: 'Asc',
+    desc: 'Desc',
+    item: 'Objeto',
+    break_even: 'Punto Equilibrio',
+
+    // Professions
+    Blacksmith: 'Herrero',
+    Sculptor: 'Escultor',
+    Jeweler: 'Joyero',
+    Shoemaker: 'Zapatero',
+    Tailor: 'Sastre',
+    Manufacturer: 'Fabricante',
+    
+    // Item Types
+    Sword: 'Espada',
+    Dagger: 'Daga',
+    Hammer: 'Martillo',
+    Shovel: 'Pala',
+    Axe: 'Hacha',
+    Scythe: 'Guadaña',
+    Pickaxe: 'Pico',
+    Bow: 'Arco',
+    Wand: 'Varita',
+    Staff: 'Bastón',
+    Amulet: 'Amuleto',
+    Ring: 'Anillo',
+    Boots: 'Botas',
+    Belt: 'Cinturón',
+    Hat: 'Sombrero',
+    Cloak: 'Capa',
+    Backpack: 'Mochila',
+    Shield: 'Escudo',
+    Trophy: 'Trofeo',
+  },
+  en: {
+    // General
+    calculator: 'Calculator',
+    rune_prices: 'Rune Prices',
+    resource_prices: 'Resource Prices',
+    level: 'Level',
+    search_object: 'Search item (e.g., Nidas)...',
+    no_results: 'No results found.',
+    loading: 'Loading...',
+
+    // Calculator Page
+    page_description: 'Adjust the stats and price to calculate the crushing profit.',
+    object_cost: 'Item Cost',
+    coefficient: 'Coefficient',
+    save_coefficient: 'Save Coefficient',
+    estimated_profit_max: 'Estimated Profit (Max)',
+    profit_description: 'Best case (No Focus or With Focus) vs. Cost.',
+    max_rune_value: 'Runes Value (Max):',
+    craft_cost: 'Craft Cost:',
+    min_coefficient: 'Minimum Coefficient:',
+    no_item_found: 'No item found. Use the search bar to begin.',
+    crushing_calculator_title: 'Crushing Calculator',
+
+    // Rune Table
+    characteristic: 'Characteristic',
+    roll: 'Roll',
+    rune: 'Rune',
+    unit_price: 'Unit Price',
+    without_focus: 'Without Focus',
+    with_focus: 'With Focus',
+    stat: 'Stat',
+    roll_values: 'Min · Current · Max',
+    type: 'Type',
+    kamas: 'Kamas',
+    quantity: 'Qty.',
+    total: 'Total',
+    total_without_focus: 'Total Without Focus',
+    rune_breakdown: 'Rune Breakdown',
+    rune_breakdown_desc: 'Adjust rolls to see exact result.',
+    
+    // Recipe Editor
+    recipe_cost: 'Recipe Cost',
+    unit_price_placeholder: 'Unit Price',
+    total_cost: 'Total Cost',
+
+    // Rune Price Editor
+    rune_prices_title: 'Rune Prices',
+
+    // Resource Price Editor
+    search_filters: 'Search Filters',
+    profession: 'Profession',
+    min_level: 'Min Level',
+    max_level: 'Max Level',
+    load: 'Load',
+    force_reload: 'Force reload',
+    search_opportunities: 'Search Opportunities',
+    resources: 'Resources',
+    save_changes: 'Save Changes',
+    mark_unavailable: 'Mark as unavailable',
+    mark_available: 'Mark as available',
+    opportunities: 'Opportunities',
+    analysis_mode: 'Analysis Mode',
+    min_cost: 'Min Cost:',
+    sort_by: 'Sort by:',
+    profit: 'Profit',
+    risk: 'Risk',
+    asc: 'Asc',
+    desc: 'Desc',
+    item: 'Item',
+    break_even: 'Break-even Point',
+
+    // Professions
+    Blacksmith: 'Blacksmith',
+    Sculptor: 'Sculptor',
+    Jeweler: 'Jeweler',
+    Shoemaker: 'Shoemaker',
+    Tailor: 'Tailor',
+    Manufacturer: 'Manufacturer',
+    
+    // Item Types
+    Sword: 'Sword',
+    Dagger: 'Dagger',
+    Hammer: 'Hammer',
+    Shovel: 'Shovel',
+    Axe: 'Axe',
+    Scythe: 'Scythe',
+    Pickaxe: 'Pickaxe',
+    Bow: 'Bow',
+    Wand: 'Wand',
+    Staff: 'Staff',
+    Amulet: 'Amulet',
+    Ring: 'Ring',
+    Boots: 'Boots',
+    Belt: 'Belt',
+    Hat: 'Hat',
+    Cloak: 'Cloak',
+    Backpack: 'Backpack',
+    Shield: 'Shield',
+    Trophy: 'Trophy',
+  },
+  fr: {
+    // General
+    calculator: 'Calculateur',
+    rune_prices: 'Prix des Runes',
+    resource_prices: 'Prix des Ressources',
+    level: 'Niveau',
+    search_object: 'Chercher un objet (ex: Nidas)...',
+    no_results: 'Aucun résultat trouvé.',
+    loading: 'Chargement...',
+
+    // Calculator Page
+    page_description: 'Ajustez les statistiques et le prix pour calculer le bénéfice de concassage.',
+    object_cost: 'Coût de l\'Objet',
+    coefficient: 'Coefficient',
+    save_coefficient: 'Sauvegarder Coeff.',
+    estimated_profit_max: 'Bénéfice Estimé (Max)',
+    profit_description: 'Meilleur scénario (Sans Focus ou Avec Focus) vs. Coût.',
+    max_rune_value: 'Valeur Runes (Max):',
+    craft_cost: 'Coût de Craft:',
+    min_coefficient: 'Coefficient Minimum:',
+    no_item_found: 'Aucun objet trouvé. Utilisez la recherche pour commencer.',
+    crushing_calculator_title: 'Calculateur de Concassage',
+
+    // Rune Table
+    characteristic: 'Caractéristique',
+    roll: 'Jet',
+    rune: 'Rune',
+    unit_price: 'Prix Unitaire',
+    without_focus: 'Sans Focus',
+    with_focus: 'Avec Focus',
+    stat: 'Stat',
+    roll_values: 'Min · Actuel · Max',
+    type: 'Type',
+    kamas: 'Kamas',
+    quantity: 'Qté.',
+    total: 'Total',
+    total_without_focus: 'Total Sans Focus',
+    rune_breakdown: 'Répartition des Runes',
+    rune_breakdown_desc: 'Ajustez les jets pour voir le résultat exact.',
+
+    // Recipe Editor
+    recipe_cost: 'Coût de la Recette',
+    unit_price_placeholder: 'Prix Unitaire',
+    total_cost: 'Coût Total',
+
+    // Rune Price Editor
+    rune_prices_title: 'Prix des Runes',
+
+    // Resource Price Editor
+    search_filters: 'Filtres de Recherche',
+    profession: 'Métier',
+    min_level: 'Niveau Minimum',
+    max_level: 'Niveau Maximum',
+    load: 'Charger',
+    force_reload: 'Forcer le Rechargement',
+    search_opportunities: 'Chercher Opportunités',
+    resources: 'Ressources',
+    save_changes: 'Sauvegarder',
+    mark_unavailable: 'Marquer comme indisponible',
+    mark_available: 'Marquer comme disponible',
+    opportunities: 'Opportunités',
+    analysis_mode: 'Mode Analyse',
+    min_cost: 'Coût Minimum:',
+    sort_by: 'Trier par:',
+    profit: 'Profit',
+    risk: 'Risque',
+    asc: 'Asc',
+    desc: 'Desc',
+    item: 'Objet',
+    break_even: 'Seuil de Rentabilité',
+
+    // Professions
+    Blacksmith: 'Forgeron',
+    Sculptor: 'Sculpteur',
+    Jeweler: 'Bijoutier',
+    Shoemaker: 'Cordonnier',
+    Tailor: 'Tailleur',
+    Manufacturer: 'Façonneur',
+    
+    // Item Types
+    Sword: 'Épée',
+    Dagger: 'Dagues',
+    Hammer: 'Marteau',
+    Shovel: 'Pelle',
+    Axe: 'Hache',
+    Scythe: 'Faux',
+    Pickaxe: 'Pioche',
+    Bow: 'Arc',
+    Wand: 'Baguette',
+    Staff: 'Bâton',
+    Amulet: 'Amulette',
+    Ring: 'Anneau',
+    Boots: 'Bottes',
+    Belt: 'Ceinture',
+    Hat: 'Chapeau',
+    Cloak: 'Cape',
+    Backpack: 'Sac à dos',
+    Shield: 'Bouclier',
+    Trophy: 'Trophée',
+  },
+};
+
+
+export const LanguageProvider = ({ children }: { children: ReactNode }) => {
+  const [language, setLanguage] = useState<Language>('es');
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') as Language;
+    if (savedLanguage && ['es', 'en', 'fr'].includes(savedLanguage)) {
+      setLanguage(savedLanguage);
+    }
+    // Set initialized to true only after the first load
+    setIsInitialized(true); 
+  }, []);
+
+  const handleSetLanguage = (lang: Language) => {
+    localStorage.setItem('language', lang);
+    setLanguage(lang);
+  };
+
+  const t = (key: string) => {
+    return translations[language]?.[key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, isInitialized, setLanguage: handleSetLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+};
