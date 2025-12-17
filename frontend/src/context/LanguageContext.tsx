@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Language = 'es' | 'en' | 'fr';
+export type Language = 'es' | 'en' | 'fr';
 
 interface LanguageContextType {
   language: Language;
@@ -12,7 +12,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const translations: Record<Language, Record<string, string>> = {
+export const translations: Record<Language, Record<string, string>> = {
   es: {
     // General
     calculator: 'Calculadora',
@@ -112,6 +112,10 @@ const translations: Record<Language, Record<string, string>> = {
     Backpack: 'Mochila',
     Shield: 'Escudo',
     Trophy: 'Trofeo',
+
+    meta_title: "Kamaskope - Calculadora de Runas Dofus y Precios de Forjamagia",
+    meta_description: "Calculadora de runas y precios de forjamagia para Dofus. Optimiza tus ganancias rompiendo objetos y gestionando tus recursos con coeficientes actualizados.",
+    logo_alt_text: "Kamaskope Logo",
   },
   en: {
     // General
@@ -212,6 +216,10 @@ const translations: Record<Language, Record<string, string>> = {
     Backpack: 'Backpack',
     Shield: 'Shield',
     Trophy: 'Trophy',
+
+    meta_title: "Kamaskope - Dofus Rune Calculator & Forgemagy Prices",
+    meta_description: "Dofus rune and forgemagy prices calculator. Optimize your profits by crushing items and managing your resources with up-to-date coefficients.",
+    logo_alt_text: "Kamaskope Logo",
   },
   fr: {
     // General
@@ -312,26 +320,28 @@ const translations: Record<Language, Record<string, string>> = {
     Backpack: 'Sac à dos',
     Shield: 'Bouclier',
     Trophy: 'Trophée',
+
+    meta_title: "Kamaskope - Calculateur de Runes Dofus et Prix de Forgemagie",
+    meta_description: "Calculateur de runes et prix de forgemagie pour Dofus. Optimisez vos gains en brisant des objets et en gérant vos ressources avec des coefficients à jour.",
+    logo_alt_text: "Logo Kamaskope",
   },
 };
 
 
-export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguage] = useState<Language>('es');
+export const LanguageProvider = ({ children, initialLanguage = 'es' }: { children: ReactNode, initialLanguage?: Language }) => {
+  const [language, setLanguageState] = useState<Language>(initialLanguage);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && ['es', 'en', 'fr'].includes(savedLanguage)) {
-      setLanguage(savedLanguage);
-    }
-    // Set initialized to true only after the first load
+    // Sincronizar el estado cuando initialLanguage cambia (cuando se navega a una ruta diferente)
+    setLanguageState(initialLanguage);
+    localStorage.setItem('language', initialLanguage);
     setIsInitialized(true); 
-  }, []);
+  }, [initialLanguage]);
 
   const handleSetLanguage = (lang: Language) => {
     localStorage.setItem('language', lang);
-    setLanguage(lang);
+    setLanguageState(lang);
   };
 
   const t = (key: string) => {

@@ -2,6 +2,7 @@
 import React from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +17,19 @@ const flags: Record<string, string> = {
 };
 
 export const LanguageSwitcher = () => {
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLanguageChange = (newLang: string) => {
+    if (!pathname) return;
+    const segments = pathname.split('/');
+    // segments[0] is empty string because path starts with /
+    // segments[1] is the locale
+    segments[1] = newLang;
+    const newPath = segments.join('/');
+    router.push(newPath);
+  };
 
   return (
     <DropdownMenu>
@@ -26,13 +39,13 @@ export const LanguageSwitcher = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => setLanguage('es')}>
+        <DropdownMenuItem onClick={() => handleLanguageChange('es')}>
           <span className="mr-2 text-lg">{flags.es}</span> Español
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLanguage('en')}>
+        <DropdownMenuItem onClick={() => handleLanguageChange('en')}>
           <span className="mr-2 text-lg">{flags.en}</span> English
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setLanguage('fr')}>
+        <DropdownMenuItem onClick={() => handleLanguageChange('fr')}>
           <span className="mr-2 text-lg">{flags.fr}</span> Français
         </DropdownMenuItem>
       </DropdownMenuContent>
