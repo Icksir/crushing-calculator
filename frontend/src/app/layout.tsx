@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DofusCrush",
   description: "Conoce los coeficientes",
+  icons: {
+    icon: '/logo.svg',
+  },
 };
 
 export default function RootLayout({

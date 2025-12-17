@@ -188,7 +188,13 @@ const Calculator = () => {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto max-w-[1600px] flex h-16 items-center gap-4 px-4">
           <div className="flex items-center gap-2 font-bold text-xl mr-4 text-primary">
-            <CalculatorIcon className="w-6 h-6" />
+            <Image 
+              src="/logo.svg" 
+              alt="DofusCrush Logo" 
+              width={32} 
+              height={32} 
+              className="w-8 h-8 object-contain" 
+            />
             <span>DofusCrush</span>
           </div>
           <div className="flex-1 max-w-md">
