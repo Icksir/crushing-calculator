@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface RecipeEditorProps {
   recipe: Ingredient[];
@@ -17,6 +18,7 @@ interface RecipeEditorProps {
 export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostChange }) => {
   const [prices, setPrices] = useState<Record<number, IngredientPriceData>>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { t } = useLanguage();
 
   // Fetch prices on mount
   useEffect(() => {
@@ -68,7 +70,7 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
       <CardHeader className="pb-3 border-b">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Coins className="w-4 h-4 text-yellow-600" />
-          Costo de Receta
+          {t('recipe_cost')}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 flex-1 flex flex-col min-h-0">
@@ -98,7 +100,7 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
                         <div>
                           <Input 
                             type="number" 
-                            placeholder="Precio Unit." 
+                            placeholder={t('unit_price_placeholder')}
                             className="h-8 text-sm text-right px-2 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-colors no-spinner"
                             value={prices[ing.id]?.price || ''}
                             onChange={(e) => handlePriceChange(ing.id, Number(e.target.value), ing.name)}
@@ -118,10 +120,8 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
         
         <div className="p-4 bg-muted/20 border-t mt-auto">
           <div className="flex justify-between items-center">
-            <span className="text-base font-medium text-muted-foreground">Total Estimado</span>
-            <span className="font-bold text-xl text-primary">
-              {formatNumber(totalCost)} <span className="text-sm font-normal text-muted-foreground">k</span>
-            </span>
+            <span className="text-sm font-semibold uppercase">{t('total_cost')}</span>
+            <span className="font-bold text-lg text-primary">{formatNumber(totalCost)} k</span>
           </div>
         </div>
       </CardContent>

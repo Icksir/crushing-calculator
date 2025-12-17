@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { searchItems, ItemSearchResponse } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Search, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ItemSearchProps {
   onSelect: (item: ItemSearchResponse) => void;
@@ -17,6 +18,7 @@ export const ItemSearch: React.FC<ItemSearchProps> = ({ onSelect }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [lastSelected, setLastSelected] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -29,11 +31,18 @@ export const ItemSearch: React.FC<ItemSearchProps> = ({ onSelect }) => {
   }, []);
 
   useEffect(() => {
+    setQuery('');
+    setResults([]);
+    setIsOpen(false);
+    setLastSelected('');
+  }, [language]);
+
+  useEffect(() => {
     const timer = setTimeout(async () => {
       if (query.length >= 2 && query !== lastSelected) {
         setLoading(true);
         try {
-          const data = await searchItems(query);
+          const data = await searchItems(query, language);
           setResults(data);
           setIsOpen(true);
         } catch (error) {
@@ -48,14 +57,14 @@ export const ItemSearch: React.FC<ItemSearchProps> = ({ onSelect }) => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, lastSelected]);
+  }, [query, lastSelected, language]);
 
   return (
     <div className="relative w-full" ref={containerRef}>
       <div className="relative group">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input 
-          placeholder="Buscar objeto (ej: Nidas)..." 
+          placeholder={t('search_object')}
           value={query} 
           onChange={(e) => {
             setQuery(e.target.value);
@@ -66,11 +75,11 @@ export const ItemSearch: React.FC<ItemSearchProps> = ({ onSelect }) => {
           onFocus={() => {
             if (results.length > 0) setIsOpen(true);
           }}
-          className="pl-10 h-10 bg-muted/50 border-transparent focus:bg-background focus:border-primary/50 transition-all shadow-sm"
+          className="pl-12 h-12 text-base bg-muted/30 border-input/50 shadow-inner focus:bg-background focus:border-primary/80 transition-all"
         />
         {loading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
       </div>
@@ -98,17 +107,20 @@ export const ItemSearch: React.FC<ItemSearchProps> = ({ onSelect }) => {
                       className="object-contain p-0.5" 
                     />
                   ) : (
-                    <div className="w-full h-full bg-muted" />
+                    <div className="w-full h-full bg-muted-foreground/20" />
                   )}
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm group-hover:text-primary transition-colors">{item.name}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">ID: {item.id}</span>
-                </div>
+                <span className="font-medium text-sm">{item.name}</span>
               </div>
             ))}
           </div>
         </Card>
+      )}
+      
+      {isOpen && !loading && query.length >= 2 && results.length === 0 && (
+         <Card className="absolute top-full left-0 w-full z-50 mt-2 p-4 bg-popover/95 backdrop-blur-sm shadow-xl border-border/50">
+           <p className="text-sm text-muted-foreground text-center">{t('no_results')}</p>
+         </Card>
       )}
     </div>
   );

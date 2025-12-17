@@ -11,14 +11,15 @@ import Image from 'next/image';
 import { Switch } from '@/components/ui/switch';
 import { formatNumber, formatDate } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLanguage } from '@/context/LanguageContext';
 
 const PROFESSIONS = [
-  { name: 'Herrero', types: ['Sword', 'Dagger', 'Hammer', 'Shovel', 'Axe', 'Scythe', 'Pickaxe'] },
-  { name: 'Escultor', types: ['Bow', 'Wand', 'Staff'] },
-  { name: 'Joyero', types: ['Amulet', 'Ring'] },
-  { name: 'Zapatero', types: ['Boots', 'Belt'] },
-  { name: 'Sastre', types: ['Hat', 'Cloak', 'Backpack'] },
-  { name: 'Fabricante', types: ['Shield', 'Trophy'] },
+  { name: 'Blacksmith', types: ['Sword', 'Dagger', 'Hammer', 'Shovel', 'Axe', 'Scythe', 'Pickaxe'] },
+  { name: 'Sculptor', types: ['Bow', 'Wand', 'Staff'] },
+  { name: 'Jeweler', types: ['Amulet', 'Ring'] },
+  { name: 'Shoemaker', types: ['Boots', 'Belt'] },
+  { name: 'Tailor', types: ['Hat', 'Cloak', 'Backpack'] },
+  { name: 'Manufacturer', types: ['Shield', 'Trophy'] },
 ];
 
 interface ResourcePriceEditorProps {
@@ -42,6 +43,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const { t, language } = useLanguage();
 
   // Load initial prices
   useEffect(() => {
@@ -54,14 +56,19 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
       const profession = PROFESSIONS.find(p => p.name === selectedProfession);
       if (!profession) return;
       
-      const data = await getBestProfitItems(profession.types, minLevel, maxLevel, 0, minCostFilter, page, 10, currentSortBy, currentSortOrder);
+      const data = await getBestProfitItems(profession.types, minLevel, maxLevel, 0, minCostFilter, page, 10, currentSortBy, currentSortOrder, language);
       setProfitItems(data.items);
       setTotalPages(data.total_pages);
       setCurrentPage(data.page);
       
       // Scroll to results after a short delay to allow rendering
       setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (resultsRef.current) {
+          const element = resultsRef.current;
+          const elementTop = element.getBoundingClientRect().top + window.pageYOffset;
+          const offset = 70; // Adjust this value to account for navbar height
+          window.scrollTo({ top: elementTop - offset, behavior: 'smooth' });
+        }
       }, 100);
     } catch (error) {
       console.error("Failed to calculate profit", error);
@@ -86,7 +93,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
     }
   };
 
-  const getCacheKey = (prof: string, min: number, max: number) => `resources_cache_${prof}_${min}_${max}`;
+  const getCacheKey = (prof: string, min: number, max: number) => `resources_cache_${prof}_${min}_${max}_${language}`;
 
   const handleLoadResources = async (forceRefresh = false) => {
     setLoading(true);
@@ -113,7 +120,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
         }
       }
 
-      const data = await getIngredientsByFilter(profession.types, minLevel, maxLevel);
+      const data = await getIngredientsByFilter(profession.types, minLevel, maxLevel, language);
       setResources(data);
       
       localStorage.setItem(cacheKey, JSON.stringify({
@@ -152,143 +159,150 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filtros de Búsqueda
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-2">
-              <Label>Profesión</Label>
-              <select 
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={selectedProfession} 
-                onChange={e => setSelectedProfession(e.target.value)}
-              >
-                {PROFESSIONS.map(p => (
-                  <option key={p.name} value={p.name}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Nivel Mínimo</Label>
-              <Input 
-                type="number" 
-                value={minLevel} 
-                onChange={e => setMinLevel(Number(e.target.value))}
-                min={1} max={200}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Nivel Máximo</Label>
-              <Input 
-                type="number" 
-                value={maxLevel} 
-                onChange={e => setMaxLevel(Number(e.target.value))}
-                min={1} max={200}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => handleLoadResources(false)} disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Cargar
-              </Button>
-              <Button onClick={() => handleLoadResources(true)} disabled={loading} variant="outline" size="icon" title="Forzar recarga">
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button onClick={handleCalculateProfit} disabled={calculatingProfit} variant="secondary">
-                {calculatingProfit ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Calculator className="w-4 h-4 mr-2" />}
-                Buscar Oportunidades
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {resources.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recursos ({resources.length})</CardTitle>
-            {hasChanges && (
-              <Button onClick={handleSave} disabled={loading}>
-                <Save className="w-4 h-4 mr-2" />
-                Guardar Cambios
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {resources.map(resource => (
-                  <div key={resource.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
-                    <div className="relative w-10 h-10 bg-muted rounded-md border overflow-hidden shrink-0">
-                      {resource.img && (
-                        <Image 
-                          src={resource.img} 
-                          alt={resource.name} 
-                          fill
-                          className="object-contain p-1"
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate" title={resource.name}>{resource.name}</div>
-                      <div className="text-xs text-muted-foreground">ID: {resource.id}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div>
-                              <Input 
-                                type="number" 
-                                placeholder={prices[resource.id]?.price === -1 ? "---" : "0"}
-                                className={`text-right h-8 w-24 ${prices[resource.id]?.price === -1 ? 'opacity-50 bg-muted' : ''}`}
-                                value={prices[resource.id]?.price === -1 ? '' : (prices[resource.id]?.price || '')}
-                                disabled={prices[resource.id]?.price === -1}
-                                onChange={e => handlePriceChange(resource.id, Number(e.target.value))}
-                              />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Actualizado: {formatDate(prices[resource.id]?.updated_at)}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-8 w-8 shrink-0 ${prices[resource.id]?.price === -1 ? 'text-destructive hover:text-destructive/90 bg-destructive/10' : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'}`}
-                        onClick={() => handlePriceChange(resource.id, prices[resource.id]?.price === -1 ? 0 : -1)}
-                        title={prices[resource.id]?.price === -1 ? "Marcar como disponible" : "Marcar como no disponible"}
+    <div className="flex flex-col gap-4 h-full">
+      {/* Columna Izquierda: Controles */}
+      <div className="w-full">
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Filter className="w-5 h-5" />
+                    {t('search_filters')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div className="space-y-2">
+                      <Label>{t('profession')}</Label>
+                      <select 
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={selectedProfession} 
+                        onChange={e => setSelectedProfession(e.target.value)}
                       >
-                        <Ban className="h-4 w-4" />
+                        {PROFESSIONS.map(p => (
+                          <option key={p.name} value={p.name}>{t(p.name)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t('min_level')}</Label>
+                      <Input 
+                        type="number" 
+                        value={minLevel} 
+                        onChange={e => setMinLevel(Number(e.target.value))}
+                        min={1} max={200}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t('max_level')}</Label>
+                      <Input 
+                        type="number" 
+                        value={maxLevel} 
+                        onChange={e => setMaxLevel(Number(e.target.value))}
+                        min={1} max={200}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => handleLoadResources(false)} disabled={loading}>
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                        {t('load')}
+                      </Button>
+                      <Button onClick={() => handleLoadResources(true)} disabled={loading} variant="outline" size="icon" title={t('force_reload')}>
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                      </Button>
+                      <Button onClick={handleCalculateProfit} disabled={calculatingProfit} variant="secondary">
+                        {calculatingProfit ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Calculator className="w-4 h-4 mr-2" />}
+                        {t('search_opportunities')}
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
+                </CardContent>
+            </Card>
 
+            {resources.length > 0 && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{t('resources')} ({resources.length})</CardTitle>
+                {hasChanges && (
+                  <Button onClick={handleSave} disabled={loading}>
+                    <Save className="w-4 h-4 mr-2" />
+                    {t('save_changes')}
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[600px] pr-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {resources.map(resource => (
+                      <div key={resource.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
+                        <div className="relative w-10 h-10 bg-muted rounded-md border overflow-hidden shrink-0">
+                          {resource.img && (
+                            <Image 
+                              src={resource.img} 
+                              alt={resource.name} 
+                              fill
+                              className="object-contain p-1"
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate" title={resource.name}>{resource.name}</div>
+                          <div className="text-xs text-muted-foreground">ID: {resource.id}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  <Input 
+                                    type="number" 
+                                    placeholder={prices[resource.id]?.price === -1 ? "---" : "0"}
+                                    className={`text-right h-8 w-24 ${prices[resource.id]?.price === -1 ? 'opacity-50 bg-muted' : ''}`}
+                                    value={prices[resource.id]?.price === -1 ? '' : (prices[resource.id]?.price || '')}
+                                    disabled={prices[resource.id]?.price === -1}
+                                    onChange={e => handlePriceChange(resource.id, Number(e.target.value))}
+                                  />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Actualizado: {formatDate(prices[resource.id]?.updated_at)}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-8 w-8 shrink-0 ${prices[resource.id]?.price === -1 ? 'text-destructive hover:text-destructive/90 bg-destructive/10' : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'}`}
+                            onClick={() => handlePriceChange(resource.id, prices[resource.id]?.price === -1 ? 0 : -1)}
+                            title={prices[resource.id]?.price === -1 ? t('mark_available') : t('mark_unavailable')}
+                          >
+                            <Ban className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+            )}
+        </div>
+      </div>
+
+      
+      {/* Columna de Oportunidades (aparece abajo en móvil o si no hay recursos) */}
       {profitItems.length > 0 && (
         <Card ref={resultsRef}>
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-4">
-                <CardTitle>Oportunidades</CardTitle>
+                <CardTitle>{t('opportunities')}</CardTitle>
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                       <Switch id="analysis-mode" checked={showAnalysis} onCheckedChange={setShowAnalysis} />
-                      <Label htmlFor="analysis-mode" className="cursor-pointer">Modo Análisis</Label>
+                      <Label htmlFor="analysis-mode" className="cursor-pointer">{t('analysis_mode')}</Label>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Label className="whitespace-nowrap">Costo Mínimo:</Label>
+                        <Label className="whitespace-nowrap">{t('min_cost')}</Label>
                         <Input 
                             type="number" 
                             className="w-32" 
@@ -298,7 +312,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                         />
                     </div>
                     <div className="flex items-center gap-2">
-                        <Label className="whitespace-nowrap text-sm text-muted-foreground">Ordenar por:</Label>
+                        <Label className="whitespace-nowrap text-sm text-muted-foreground">{t('sort_by')}</Label>
                         <div className="flex items-center gap-2 border rounded-md p-1 bg-muted/20">
                             <Button 
                                 variant={sortBy === 'profit' ? 'secondary' : 'ghost'} 
@@ -306,7 +320,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                 onClick={() => { setSortBy('profit'); fetchProfitItems(1, 'profit'); }}
                                 className="h-7 text-xs"
                             >
-                                Profit
+                                {t('profit')}
                             </Button>
                             <Button 
                                 variant={sortBy === 'risk' ? 'secondary' : 'ghost'} 
@@ -314,7 +328,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                 onClick={() => { setSortBy('risk'); fetchProfitItems(1, 'risk'); }}
                                 className="h-7 text-xs"
                             >
-                                Coef. Mínimo
+                                {t('min_coefficient')}
                             </Button>
                             <div className="w-px h-4 bg-border mx-1"></div>
                             <Button
@@ -326,7 +340,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                     fetchProfitItems(1, undefined, newOrder); 
                                 }}
                                 className="h-7 w-7 p-0"
-                                title={sortOrder === 'asc' ? "Ascendente" : "Descendente"}
+                                title={sortOrder === 'asc' ? t('asc') : t('desc')}
                             >
                                 {sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                             </Button>
@@ -374,7 +388,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                         </div>
                         <div>
                           <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-muted-foreground">Nivel {item.level}</div>
+                          <div className="text-sm text-muted-foreground">{t('level')} {item.level}</div>
                         </div>
                       </div>
                       
@@ -382,7 +396,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                         {showAnalysis ? (
                             <div className="flex gap-8">
                                 <div>
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Gap de Rentabilidad</div>
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t('gap')}</div>
                                     <div className={`text-lg font-bold ${heuristicColor}`}>
                                         {heuristicStatus}
                                     </div>
@@ -391,12 +405,12 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Ratio (V100/Costo)</div>
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t('details')}</div>
                                     <div className="text-lg font-mono">
                                         {ratio.toFixed(2)}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                        Runas al 100%: {formatNumber(item.value_at_100)} k
+                                        {t('estimated_value')}: {formatNumber(item.value_at_100)} k
                                     </div>
                                 </div>
                             </div>
@@ -404,18 +418,18 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                             <>
                                 <div>
                                   <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                                    Profit Potencial <span className="normal-case text-[10px] opacity-80">({item.last_coefficient || 100}%)</span>
+                                    {t('profit')} <span className="normal-case text-[10px] opacity-80">({item.last_coefficient || 100}%)</span>
                                   </div>
                                   <div className={`text-lg font-bold ${profitPotential >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     {formatNumber(profitPotential)} k
                                   </div>
                                   <div className="text-xs text-muted-foreground">
-                                    Costo: {formatNumber(item.craft_cost)} k
+                                    {t('craft_cost')} {formatNumber(item.craft_cost)} k
                                   </div>
                                 </div>
 
                                 <div>
-                                  <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Coef. Mínimo Profit</div>
+                                  <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t('break_even')}</div>
                                   <div className={`text-lg ${riskColorClass}`}>
                                     {risk.toFixed(2)}%
                                   </div>
@@ -442,7 +456,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        Página {currentPage} de {totalPages}
+                        {t('page')} {currentPage} {t('of')} {totalPages}
                     </span>
                     <Button 
                         variant="outline" 

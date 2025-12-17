@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { ItemSearch } from '@/components/ItemSearch';
 import { RuneTable } from '@/components/RuneTable';
@@ -17,6 +17,15 @@ import { Button } from '@/components/ui/button';
 import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2 } from 'lucide-react';
 import { ResourcePriceEditor } from '@/components/ResourcePriceEditor';
 import { RunePriceEditor } from '@/components/RunePriceEditor';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/context/LanguageContext';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
+
+const SERVERS = [
+  'Dakal', 'Mikhal', 'Draconiros', 'Tal Kasha', 'Imagiro', 
+  'Orukam', 'Hell Mina', 'Tylezia', 'Rafal', 'Brial', 'Salar'
+];
 
 const Calculator = () => {
   const [activeTab, setActiveTab] = useState<'calculator' | 'runes' | 'resources'>('calculator');
@@ -31,10 +40,88 @@ const Calculator = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showTop3, setShowTop3] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [visibleRunes, setVisibleRunes] = useState(7);
+  const [selectedServer, setSelectedServer] = useState<string>('Dakal');
+
+  const runesContainerRef = useRef<HTMLDivElement>(null);
   
   const { runePrices } = useRunePrices();
+  const { t, language } = useLanguage();
+  const prevLanguageRef = useRef(language);
+
+  const ServerSwitcher = () => {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="gap-2">
+            <span className="text-sm font-medium">{selectedServer}</span>
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {SERVERS.map((server) => (
+            <DropdownMenuItem 
+              key={server} 
+              onClick={() => setSelectedServer(server)}
+              className={selectedServer === server ? 'bg-accent' : ''}
+            >
+              {server}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  useEffect(() => {
+    if (prevLanguageRef.current !== language) {
+      setSelectedItem(null);
+      setStats([]);
+      setRecipe([]);
+      setCost(0);
+      setCoeff(100);
+      setLastCoeffDate(null);
+      setItemLevel(200);
+      setResult(null);
+      setLoadingDetails(false);
+      setShowTop3(false);
+      setIsSaving(false);
+      setActiveTab('calculator');
+      
+      prevLanguageRef.current = language;
+    }
+  }, [language]);
+
+  useEffect(() => {
+    const calculateVisibleRunes = () => {
+      if (runesContainerRef.current) {
+        const availableSpace = runesContainerRef.current.offsetWidth;
+        const runeSlotWidth = 32 + 12; // 32px for rune, 12px for gap
+        const count = Math.floor(availableSpace / runeSlotWidth);
+        setVisibleRunes(Math.max(0, count));
+      }
+    };
+
+    const observer = new ResizeObserver(calculateVisibleRunes);
+    const container = runesContainerRef.current;
+
+    if (container) {
+      observer.observe(container);
+    }
+
+    // Initial calculation after a short delay for rendering
+    const timerId = setTimeout(calculateVisibleRunes, 50);
+
+    return () => {
+      if (container) {
+        observer.unobserve(container);
+      }
+      clearTimeout(timerId);
+    };
+  }, [language, runePrices]); // Rerun when language or data changes
 
   const handleSelect = async (item: ItemSearchResponse) => {
+    setActiveTab('calculator');
     setSelectedItem(item);
     setStats(item.stats); 
     setResult(null);
@@ -44,7 +131,7 @@ const Calculator = () => {
     setLoadingDetails(true);
     
     try {
-      const details = await getItemDetails(item.id);
+      const details = await getItemDetails(item.id, language);
       if (details) {
         setItemLevel(details.level);
         if (details.last_coefficient) {
@@ -91,7 +178,8 @@ const Calculator = () => {
           stats,
           coefficient: coeff === '' ? 0 : coeff,
           item_cost: cost,
-          rune_prices: simpleRunePrices
+          rune_prices: simpleRunePrices,
+          lang: language,
         });
         setResult(res);
       } catch (error) {
@@ -108,7 +196,7 @@ const Calculator = () => {
     
     setIsSaving(true);
     try {
-      await saveItemCoefficient(selectedItem.id, coeff);
+      await saveItemCoefficient(selectedItem.id, coeff, language);
       setLastCoeffDate(new Date().toISOString());
     } catch (e) {
       console.error("Failed to save coefficient", e);
@@ -186,28 +274,61 @@ const Calculator = () => {
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 flex flex-col font-sans">
       {/* Top Bar */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto max-w-[1600px] flex h-16 items-center gap-4 px-4">
-          <div className="flex items-center gap-2 font-bold text-xl mr-4 text-primary">
-            <Image 
-              src="/logo.svg" 
-              alt="Kamascope Logo" 
-              width={32} 
-              height={32} 
-              className="w-8 h-8 object-contain" 
-            />
-            <span>Kamascope</span>
+        <div className="container mx-auto max-w-[1600px] flex h-16 items-center justify-between gap-6 px-4">
+          
+          <div className="flex items-center gap-8 flex-1 min-w-0">
+            {/* Left: Logo */}
+            <div className="flex items-center gap-2 font-bold text-xl text-primary flex-shrink-0">
+              <Image 
+                src="/logo.svg" 
+                alt="Kamaskope Logo" 
+                width={32} 
+                height={32} 
+                className="w-8 h-8 object-contain" 
+              />
+              <span className="hidden sm:inline">Kamaskope</span>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="w-full max-w-xl">
+                 <ItemSearch onSelect={handleSelect} />
+            </div>
           </div>
-          <div className="flex-1 max-w-md">
-             <ItemSearch onSelect={handleSelect} />
+
+          {/* Right: Server and Language Switchers */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <ServerSwitcher />
+            <LanguageSwitcher />
           </div>
+
         </div>
       </header>
 
       <main className="flex-1 container mx-auto max-w-[1600px] p-4 md:p-8 space-y-8">
-        <div className="flex gap-2 border-b pb-4 overflow-x-auto">
-          <Button variant={activeTab === 'calculator' ? 'default' : 'ghost'} onClick={() => setActiveTab('calculator')}>Calculadora</Button>
-          <Button variant={activeTab === 'runes' ? 'default' : 'ghost'} onClick={() => setActiveTab('runes')}>Precios Runas</Button>
-          <Button variant={activeTab === 'resources' ? 'default' : 'ghost'} onClick={() => setActiveTab('resources')}>Precios Recursos</Button>
+        <div className="flex justify-between items-center border-b pb-4 gap-4">
+          <div className="flex gap-2 overflow-x-auto flex-shrink-0">
+            <Button variant={activeTab === 'calculator' ? 'default' : 'ghost'} onClick={() => setActiveTab('calculator')}>{t('calculator')}</Button>
+            <Button variant={activeTab === 'runes' ? 'default' : 'ghost'} onClick={() => setActiveTab('runes')}>{t('rune_prices')}</Button>
+            <Button variant={activeTab === 'resources' ? 'default' : 'ghost'} onClick={() => setActiveTab('resources')}>{t('resource_prices')}</Button>
+          </div>
+          <div ref={runesContainerRef} className="hidden md:flex items-center justify-end gap-3 flex-1">
+            {Object.entries(runePrices)
+              .filter(([name, rune]) => {
+                const n = name.toLowerCase();
+                return (n.includes('rune') || n.includes('runa')) && rune.image_url;
+              })
+              .slice(0, visibleRunes)
+              .map(([name, rune]) => (
+                <div key={name} className="relative w-8 h-8 opacity-40 hover:opacity-100 transition-opacity">
+                  <Image
+                    src={rune.image_url!}
+                    alt=""
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              ))}
+          </div>
         </div>
 
         <div className={activeTab === 'calculator' ? 'block' : 'hidden'}>
@@ -239,10 +360,10 @@ const Calculator = () => {
                     <div className="flex-1 text-center sm:text-left space-y-2">
                       <div className="flex flex-col sm:flex-row items-center gap-3 justify-center sm:justify-start">
                         <h1 className="text-3xl font-extrabold tracking-tight lg:text-4xl">{selectedItem.name}</h1>
-                        <Badge variant="secondary" className="w-fit px-3 py-1 text-sm h-fit justify-center shrink-0 whitespace-nowrap">Nivel {itemLevel}</Badge>
+                        <Badge variant="secondary" className="w-fit px-3 py-1 text-sm h-fit justify-center shrink-0 whitespace-nowrap">{t('level')} {itemLevel}</Badge>
                       </div>
                       <p className="text-muted-foreground max-w-md">
-                        Ajusta las estadísticas y el precio para calcular el beneficio de rompimiento.
+                        {t('page_description')}
                       </p>
                     </div>
                   </div>
@@ -253,7 +374,7 @@ const Calculator = () => {
                         <Coins size={20} />
                       </div>
                       <div className="flex flex-col flex-1">
-                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">Costo Objeto</span>
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">{t('object_cost')}</span>
                         <div className="flex items-center gap-1">
                           <Input 
                             type="number" 
@@ -272,7 +393,7 @@ const Calculator = () => {
                           <Percent size={20} />
                         </div>
                         <div className="flex flex-col flex-1">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground">Coeficiente</span>
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground">{t('coefficient')}</span>
                           <div className="flex items-center gap-1">
                             <Input 
                               type="number" 
@@ -288,7 +409,7 @@ const Calculator = () => {
                               className="h-8 w-8 ml-1 text-muted-foreground hover:text-primary"
                               onClick={handleSaveCoefficient}
                               disabled={isSaving || coeff === ''}
-                              title="Guardar Coeficiente"
+                              title={t('save_coefficient')}
                             >
                               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                             </Button>
@@ -309,7 +430,7 @@ const Calculator = () => {
               <Card className="border-none shadow-lg bg-card flex flex-col justify-center relative overflow-hidden">
                 <div className={`absolute inset-0 opacity-5 ${liveMetrics.profit > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Beneficio Estimado (Max)</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t('estimated_profit_max')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col gap-1">
@@ -317,24 +438,24 @@ const Calculator = () => {
                       {result ? `${formatNumber(liveMetrics.profit)}` : '---'} <span className="text-xl font-normal text-muted-foreground">k</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Mejor escenario (Sin Focus o Con Focus) vs Costo.
+                      {t('profit_description')}
                     </p>
                   </div>
                   
                   {result && (
                     <div className="mt-6 space-y-2">
                       <div className="flex justify-between text-base">
-                        <span className="text-muted-foreground">Valor Runas (Max):</span>
+                        <span className="text-muted-foreground">{t('max_rune_value')}</span>
                         <span className="font-medium">{formatNumber(liveMetrics.totalValue)} k</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between text-base">
-                        <span className="text-muted-foreground">Costo Craft:</span>
+                        <span className="text-muted-foreground">{t('craft_cost')}</span>
                         <span className="font-medium">{formatNumber(cost)} k</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between text-base items-center pt-1">
-                        <span className="text-muted-foreground">Coeficiente Mínimo:</span>
+                        <span className="text-muted-foreground">{t('min_coefficient')}</span>
                         <span className={`font-bold px-2 py-0.5 rounded ${
                           liveMetrics.breakEvenCoeff <= (coeff === '' ? 0 : coeff) 
                             ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
@@ -356,7 +477,7 @@ const Calculator = () => {
                 {loadingDetails ? (
                    <div className="flex items-center justify-center p-8 text-muted-foreground">
                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-2"></div>
-                     Cargando receta...
+                     {t('loading')}
                    </div>
                 ) : (
                    <RecipeEditor recipe={recipe} onTotalCostChange={setCost} />
@@ -367,12 +488,12 @@ const Calculator = () => {
               <div className="xl:col-span-3">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                    <div>
-                     <h2 className="text-2xl font-bold tracking-tight">Desglose de Runas</h2>
-                     <p className="text-muted-foreground text-sm">Ajusta las tiradas para ver el resultado exacto.</p>
+                     <h2 className="text-2xl font-bold tracking-tight">{t('rune_breakdown')}</h2>
+                     <p className="text-muted-foreground text-sm">{t('rune_breakdown_desc')}</p>
                    </div>
                    <div className="flex items-center space-x-2 bg-card p-2 rounded-lg border shadow-sm">
                       <Switch id="show-top-3" checked={showTop3} onCheckedChange={setShowTop3} />
-                      <Label htmlFor="show-top-3" className="text-sm font-medium cursor-pointer">Mostrar Top 3</Label>
+                      <Label htmlFor="show-top-3" className="text-sm font-medium cursor-pointer">Top 3</Label>
                    </div>
                 </div>
                 <RuneTable 
@@ -390,9 +511,9 @@ const Calculator = () => {
               <CalculatorIcon size={64} className="text-muted-foreground/50" />
             </div>
             <div className="max-w-md space-y-2">
-              <h2 className="text-3xl font-bold tracking-tight">Calculadora de Rompimiento</h2>
+              <h2 className="text-3xl font-bold tracking-tight">{t('crushing_calculator_title')}</h2>
               <p className="text-muted-foreground text-lg">
-                Busca un objeto en la barra superior para comenzar a calcular beneficios, recetas y runas.
+                {t('no_item_found')}
               </p>
             </div>
           </div>
@@ -404,12 +525,14 @@ const Calculator = () => {
         </div>
         
         <div className={activeTab === 'resources' ? 'block' : 'hidden'}>
-          <ResourcePriceEditor 
-            onSelectItem={(item) => {
-              setActiveTab('calculator');
-              handleSelect({ ...item, stats: [] });
-            }} 
-          />
+          <div className="space-y-6">
+            <ResourcePriceEditor 
+              onSelectItem={(item) => {
+                setActiveTab('calculator');
+                handleSelect({ ...item, stats: [] });
+              }} 
+            />
+          </div>
         </div>
       </main>
     </div>

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { formatNumber, formatDate } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface RuneTableProps {
   stats: ItemStat[];
@@ -18,6 +19,7 @@ interface RuneTableProps {
 
 export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatChange, showTop3 = false }) => {
   const { runePrices, updatePrice } = useRunePrices();
+  const { t } = useLanguage();
 
   const handleStatValueChange = (index: number, newValue: number) => {
     const newStats = [...stats];
@@ -71,26 +73,26 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableHead className="w-[200px] pl-6">Característica</TableHead>
-            <TableHead className="w-[220px] text-center">Tirada</TableHead>
-            <TableHead className="w-[180px]">Runa</TableHead>
-            <TableHead className="w-[120px]">Precio Unit.</TableHead>
+            <TableHead className="w-[200px] pl-6">{t('characteristic')}</TableHead>
+            <TableHead className="w-[220px] text-center">{t('roll')}</TableHead>
+            <TableHead className="w-[180px]">{t('rune')}</TableHead>
+            <TableHead className="w-[120px]">{t('unit_price')}</TableHead>
             <TableHead className="text-center bg-blue-50/50 dark:bg-blue-950/20 border-l border-r border-border/50" colSpan={2}>
-              <span className="text-blue-600 dark:text-blue-400 font-semibold">Sin Focus</span>
+              <span className="text-blue-600 dark:text-blue-400 font-semibold">{t('without_focus')}</span>
             </TableHead>
             <TableHead className="text-center bg-purple-50/50 dark:bg-purple-950/20" colSpan={2}>
-              <span className="text-purple-600 dark:text-purple-400 font-semibold">Con Focus</span>
+              <span className="text-purple-600 dark:text-purple-400 font-semibold">{t('with_focus')}</span>
             </TableHead>
           </TableRow>
           <TableRow className="text-[10px] uppercase tracking-wider text-muted-foreground border-b-2 hover:bg-transparent">
-            <TableHead className="pl-6 font-semibold">Stat</TableHead>
-            <TableHead className="text-center font-semibold">Min · Actual · Max</TableHead>
-            <TableHead className="font-semibold">Tipo</TableHead>
-            <TableHead className="font-semibold">Kamas</TableHead>
-            <TableHead className="text-right font-semibold border-l border-border/50 bg-blue-50/30 dark:bg-blue-950/10">Cant.</TableHead>
-            <TableHead className="text-right font-semibold border-r border-border/50 bg-blue-50/30 dark:bg-blue-950/10">Total</TableHead>
-            <TableHead className="text-right font-semibold bg-purple-50/30 dark:bg-purple-950/10">Cant.</TableHead>
-            <TableHead className="text-right font-semibold bg-purple-50/30 dark:bg-purple-950/10">Total</TableHead>
+            <TableHead className="pl-6 font-semibold">{t('stat')}</TableHead>
+            <TableHead className="text-center font-semibold">{t('roll_values')}</TableHead>
+            <TableHead className="font-semibold">{t('type')}</TableHead>
+            <TableHead className="font-semibold">{t('kamas')}</TableHead>
+            <TableHead className="text-right font-semibold border-l border-border/50 bg-blue-50/30 dark:bg-blue-950/10">{t('quantity')}</TableHead>
+            <TableHead className="text-right font-semibold border-r border-border/50 bg-blue-50/30 dark:bg-blue-950/10">{t('total')}</TableHead>
+            <TableHead className="text-right font-semibold bg-purple-50/30 dark:bg-purple-950/10">{t('quantity')}</TableHead>
+            <TableHead className="text-right font-semibold bg-purple-50/30 dark:bg-purple-950/10">{t('total')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -134,7 +136,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
                      )}
                    </div>
                    <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                     {result?.rune_name || stat.rune_name || `Runa ${stat.name.substring(0,3)}`}
+                     {result?.rune_name || stat.rune_name || `${t('rune')} ${stat.name.substring(0,3)}`}
                    </span>
                 </div>
               </TableCell>
@@ -240,12 +242,13 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
               </TableCell>
             </TableRow>
           ))}
-          <TableRow className="bg-muted/50 font-bold border-t-2 border-border">
-            <TableCell colSpan={4} className="text-right pr-6 py-4 text-muted-foreground uppercase text-xs tracking-wider">
-              Total Estimado (Sin Focus)
-            </TableCell>
-            <TableCell className="border-l border-border/50 bg-blue-50/20 dark:bg-blue-950/10"></TableCell>
-            <TableCell className="text-right text-lg border-r border-border/50 bg-blue-50/20 dark:bg-blue-950/10">
+
+          {/* TOTAL SIN FOCUS */}
+          <TableRow className="bg-muted/40 hover:bg-muted/40 font-bold border-t-2">
+            <TableCell colSpan={5} className="text-right text-base pr-4">{t('total_without_focus')}</TableCell>
+            <TableCell 
+              className="text-right text-lg text-blue-700 dark:text-blue-400 bg-blue-50/30 dark:bg-blue-950/10 border-r border-border/50"
+            >
                {(() => {
                  let styleClass = 'text-blue-700 dark:text-blue-400';
                  if (totalSinFocus > 0) {
