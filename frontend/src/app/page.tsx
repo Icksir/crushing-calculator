@@ -36,36 +36,50 @@ const Calculator = () => {
   const [coeff, setCoeff] = useState<number | ''>(100);
   const [lastCoeffDate, setLastCoeffDate] = useState<string | null>(null);
   const [itemLevel, setItemLevel] = useState<number>(200);
+  const [displayLevel, setDisplayLevel] = useState<string>("200");
   const [result, setResult] = useState<CalculateResponse | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showTop3, setShowTop3] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [visibleRunes, setVisibleRunes] = useState(7);
-  const [selectedServer, setSelectedServer] = useState<string>('Dakal');
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const runesContainerRef = useRef<HTMLDivElement>(null);
   
-  const { runePrices } = useRunePrices();
+  const { runePrices, server, setServer } = useRunePrices();
   const { t, language } = useLanguage();
   const prevLanguageRef = useRef(language);
 
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   const ServerSwitcher = () => {
+    if (!isHydrated) {
+      return (
+        <Button variant="ghost" size="sm" className="gap-2" disabled>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm font-medium">{t('loading')}</span>
+        </Button>
+      );
+    }
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" className="gap-2">
-            <span className="text-sm font-medium">{selectedServer}</span>
+            <span className="text-sm font-medium">{server}</span>
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {SERVERS.map((server) => (
+          {SERVERS.map((srv) => (
             <DropdownMenuItem 
-              key={server} 
-              onClick={() => setSelectedServer(server)}
-              className={selectedServer === server ? 'bg-accent' : ''}
+              key={srv} 
+              onClick={() => setServer(srv)}
+              className={server === srv ? 'bg-accent' : ''}
             >
-              {server}
+              {srv}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -82,15 +96,32 @@ const Calculator = () => {
       setCoeff(100);
       setLastCoeffDate(null);
       setItemLevel(200);
+      setDisplayLevel("200");
       setResult(null);
       setLoadingDetails(false);
-      setShowTop3(false);
       setIsSaving(false);
       setActiveTab('calculator');
       
       prevLanguageRef.current = language;
     }
   }, [language]);
+
+  useEffect(() => {
+    // Reset calculator state when server changes
+    setSelectedItem(null);
+    setStats([]);
+    setRecipe([]);
+    setCost(0);
+    setCoeff(100);
+    setLastCoeffDate(null);
+    setItemLevel(200);
+    setDisplayLevel("200");
+    setResult(null);
+    setLoadingDetails(false);
+    setShowTop3(false);
+    setIsSaving(false);
+    setActiveTab('calculator');
+  }, [server]);
 
   useEffect(() => {
     const calculateVisibleRunes = () => {
@@ -129,11 +160,13 @@ const Calculator = () => {
     setCoeff(''); // Reset to empty while loading
     setLastCoeffDate(null);
     setLoadingDetails(true);
+    setDisplayLevel("Cargando...");
     
     try {
-      const details = await getItemDetails(item.id, language);
+      const details = await getItemDetails(item.id, language, server);
       if (details) {
         setItemLevel(details.level);
+        setDisplayLevel(details.level.toString());
         if (details.last_coefficient) {
           setCoeff(details.last_coefficient);
         } else {
@@ -180,6 +213,7 @@ const Calculator = () => {
           item_cost: cost,
           rune_prices: simpleRunePrices,
           lang: language,
+          server: server,
         });
         setResult(res);
       } catch (error) {
@@ -189,14 +223,14 @@ const Calculator = () => {
 
     const timer = setTimeout(calculate, 300);
     return () => clearTimeout(timer);
-  }, [stats, cost, coeff, runePrices, selectedItem, itemLevel]);
+  }, [stats, cost, coeff, runePrices, selectedItem, itemLevel, server]);
 
   const handleSaveCoefficient = async () => {
     if (!selectedItem || coeff === '') return;
     
     setIsSaving(true);
     try {
-      await saveItemCoefficient(selectedItem.id, coeff, language);
+      await saveItemCoefficient(selectedItem.id, coeff, language, server);
       setLastCoeffDate(new Date().toISOString());
     } catch (e) {
       console.error("Failed to save coefficient", e);
@@ -360,7 +394,7 @@ const Calculator = () => {
                     <div className="flex-1 text-center sm:text-left space-y-2">
                       <div className="flex flex-col sm:flex-row items-center gap-3 justify-center sm:justify-start">
                         <h1 className="text-3xl font-extrabold tracking-tight lg:text-4xl">{selectedItem.name}</h1>
-                        <Badge variant="secondary" className="w-fit px-3 py-1 text-sm h-fit justify-center shrink-0 whitespace-nowrap">{t('level')} {itemLevel}</Badge>
+                        <Badge variant="secondary" className="w-fit px-3 py-1 text-sm h-fit justify-center shrink-0 whitespace-nowrap">{displayLevel === "Cargando..." ? displayLevel : `${t('level')} ${displayLevel}`}</Badge>
                       </div>
                       <p className="text-muted-foreground max-w-md">
                         {t('page_description')}
