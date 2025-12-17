@@ -190,12 +190,12 @@ const Calculator = () => {
           <div className="flex items-center gap-2 font-bold text-xl mr-4 text-primary">
             <Image 
               src="/logo.svg" 
-              alt="DofusCrush Logo" 
+              alt="Kamascope Logo" 
               width={32} 
               height={32} 
               className="w-8 h-8 object-contain" 
             />
-            <span>DofusCrush</span>
+            <span>Kamascope</span>
           </div>
           <div className="flex-1 max-w-md">
              <ItemSearch onSelect={handleSelect} />

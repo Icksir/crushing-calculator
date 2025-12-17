@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000', // Backend URL (using IP to avoid localhost IPv6 issues)
+  baseURL: process.env.NEXT_PUBLIC_API_URL || '',
 });
 
 export interface RunePriceData {

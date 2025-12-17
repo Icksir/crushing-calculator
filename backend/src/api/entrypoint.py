@@ -30,9 +30,22 @@ def create_app() -> FastAPI:
     app.include_router(prices_routes, prefix="/api")
     app.include_router(ocr_routes, prefix="/api")
     
+    @app.get("/")
+    def health_check():
+        return {"status": "ok", "message": "Backend is running"}
+
+    @app.get("/api/health")
+    def api_health_check():
+        return {"status": "ok", "message": "API is accessible"}
+
     return app
 
 app = create_app()
+
+# Print routes for debugging
+for route in app.routes:
+    if hasattr(route, "path"):
+        print(f"Route: {route.path}")
 
 def main():
     if env_settings.environment == "development":

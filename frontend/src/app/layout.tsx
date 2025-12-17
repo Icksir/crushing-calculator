@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DofusCrush",
+  title: "Kamascope",
   description: "Conoce los coeficientes",
   icons: {
     icon: '/logo.svg',

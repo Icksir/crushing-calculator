@@ -5,6 +5,7 @@
 .idea/
 
 # Python / Backend
+*.sql
 backend/debug_hsv_mask.png
 __pycache__/
 *.py[cod]
