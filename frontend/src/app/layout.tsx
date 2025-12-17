@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/context/LanguageContext";
+import { RunePriceProvider } from "@/context/RunePriceContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kamascope",
+  title: "Kamaskope",
   description: "Conoce los coeficientes",
   icons: {
     icon: '/logo.svg',
@@ -27,10 +29,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+        <LanguageProvider>
+          <RunePriceProvider>
+            {children}
+          </RunePriceProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
