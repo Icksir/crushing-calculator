@@ -4,12 +4,13 @@ from typing import List, Optional
 from src.models.schemas import ItemSearchResponse, ItemDetailsResponse, ItemStat, Ingredient
 from src.services.calculator import get_rune_info
 
-DOFUSDUDE_API_URL = "https://api.dofusdu.de/dofus3/v1/es"
+DOFUSDUDE_API_BASE_URL = "https://api.dofusdu.de/dofus3/v1"
 
-async def search_equipment(query: str) -> List[ItemSearchResponse]:
+async def search_equipment(query: str, lang: str = "es") -> List[ItemSearchResponse]:
     async with httpx.AsyncClient() as client:
         # Using the correct search endpoint
-        response = await client.get(f"{DOFUSDUDE_API_URL}/items/equipment/search?query={query}&limit=20")
+        url = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/equipment/search?query={query}&limit=20"
+        response = await client.get(url)
         if response.status_code != 200:
             return []
             
@@ -31,7 +32,7 @@ async def search_equipment(query: str) -> List[ItemSearchResponse]:
                     max_val = effect.get('int_maximum', 0)
                     
                     # Determine rune name
-                    rune_info = get_rune_info(type_name)
+                    rune_info = get_rune_info(type_name, lang)
                     rune_name = rune_info["name"] if rune_info else None
                     
                     stats.append(ItemStat(name=type_name, value=value, min=min_val, max=max_val, rune_name=rune_name))
@@ -44,28 +45,31 @@ async def search_equipment(query: str) -> List[ItemSearchResponse]:
             ))
         return results
 
-async def search_resource(query: str) -> Optional[int]:
+async def search_resource(query: str, lang: str = "es") -> Optional[int]:
     """
     Search for a resource by name and return its Ankama ID.
     Returns the ID of the first match or None.
     """
     async with httpx.AsyncClient() as client:
         # Search in resources
-        response = await client.get(f"{DOFUSDUDE_API_URL}/items/resources/search?query={query}&limit=1")
+        url_res = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/resources/search?query={query}&limit=1"
+        response = await client.get(url_res)
         if response.status_code == 200:
             items = response.json()
             if items and len(items) > 0:
                 return items[0].get('ankama_id')
         
         # Fallback: Search in consumables
-        response = await client.get(f"{DOFUSDUDE_API_URL}/items/consumables/search?query={query}&limit=1")
+        url_con = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/consumables/search?query={query}&limit=1"
+        response = await client.get(url_con)
         if response.status_code == 200:
             items = response.json()
             if items and len(items) > 0:
                 return items[0].get('ankama_id')
                 
         # Fallback: Search in equipment (some items might be equipment)
-        response = await client.get(f"{DOFUSDUDE_API_URL}/items/equipment/search?query={query}&limit=1")
+        url_eq = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/equipment/search?query={query}&limit=1"
+        response = await client.get(url_eq)
         if response.status_code == 200:
             items = response.json()
             if items and len(items) > 0:
@@ -73,10 +77,11 @@ async def search_resource(query: str) -> Optional[int]:
                 
         return None
 
-async def get_item_details(ankama_id: int) -> Optional[ItemDetailsResponse]:
+async def get_item_details(ankama_id: int, lang: str = "es") -> Optional[ItemDetailsResponse]:
     async with httpx.AsyncClient() as client:
         # Fetch item details
-        response = await client.get(f"{DOFUSDUDE_API_URL}/items/equipment/{ankama_id}")
+        url = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/equipment/{ankama_id}"
+        response = await client.get(url)
         if response.status_code != 200:
             return None
             
@@ -97,7 +102,7 @@ async def get_item_details(ankama_id: int) -> Optional[ItemDetailsResponse]:
             max_val = effect.get('int_maximum', 0)
             
             # Determine rune name
-            rune_info = get_rune_info(type_name)
+            rune_info = get_rune_info(type_name, lang)
             rune_name = rune_info["name"] if rune_info else None
             
             stats.append(ItemStat(name=type_name, value=value, min=min_val, max=max_val, rune_name=rune_name))
@@ -130,7 +135,7 @@ async def get_item_details(ankama_id: int) -> Optional[ItemDetailsResponse]:
             
             # Actually, let's just try resources first, as 99% are resources.
             # Or better, define a helper to fetch generic item info.
-            tasks.append(fetch_ingredient_details(client, ing_id, url_part, ing.get('quantity', 1)))
+            tasks.append(fetch_ingredient_details(client, ing_id, url_part, ing.get('quantity', 1), lang))
             
         ingredients = await asyncio.gather(*tasks)
         # Filter out Nones
@@ -146,14 +151,15 @@ async def get_item_details(ankama_id: int) -> Optional[ItemDetailsResponse]:
             recipe=ingredients
         )
 
-async def fetch_ingredient_details(client: httpx.AsyncClient, ankama_id: int, type_str: str, quantity: int) -> Optional[Ingredient]:
+async def fetch_ingredient_details(client: httpx.AsyncClient, ankama_id: int, type_str: str, quantity: int, lang: str = "es") -> Optional[Ingredient]:
     retries = 3
     base_delay = 1.0
     
     for attempt in range(retries):
         try:
             # Try the guessed type
-            response = await client.get(f"{DOFUSDUDE_API_URL}/items/{type_str}/{ankama_id}")
+            url = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/{type_str}/{ankama_id}"
+            response = await client.get(url)
             
             if response.status_code == 429:
                 if attempt < retries - 1:
@@ -166,7 +172,8 @@ async def fetch_ingredient_details(client: httpx.AsyncClient, ankama_id: int, ty
             if response.status_code != 200:
                 # Fallback: try resources if we failed and didn't try it yet
                 if type_str != "resources":
-                     response = await client.get(f"{DOFUSDUDE_API_URL}/items/resources/{ankama_id}")
+                     fallback_url = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/resources/{ankama_id}"
+                     response = await client.get(fallback_url)
                      if response.status_code == 429:
                         if attempt < retries - 1:
                             await asyncio.sleep(base_delay * (2 ** attempt))
@@ -190,7 +197,7 @@ async def fetch_ingredient_details(client: httpx.AsyncClient, ankama_id: int, ty
             return None
     return None
 
-async def fetch_raw_equipment(types: List[str], min_level: int, max_level: int) -> List[dict]:
+async def fetch_raw_equipment(types: List[str], min_level: int, max_level: int, lang: str = "es") -> List[dict]:
     filter_types = [t.lower() for t in types]
     
     # Handle 'backpack' specially because it doesn't have a valid name_id slug in Spanish
@@ -203,7 +210,7 @@ async def fetch_raw_equipment(types: List[str], min_level: int, max_level: int) 
     async with httpx.AsyncClient(timeout=60.0) as client:
         # Fetch normal types
         if filter_types:
-            url = f"{DOFUSDUDE_API_URL}/items/equipment/all"
+            url = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/equipment/all"
             params = {
                 "filter[min_level]": min_level,
                 "filter[max_level]": max_level,
@@ -226,7 +233,7 @@ async def fetch_raw_equipment(types: List[str], min_level: int, max_level: int) 
 
         # Fetch backpacks if needed
         if has_backpack:
-            url = f"{DOFUSDUDE_API_URL}/items/equipment/all"
+            url = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/equipment/all"
             params = {
                 "filter[min_level]": min_level,
                 "filter[max_level]": max_level,
@@ -249,8 +256,8 @@ async def fetch_raw_equipment(types: List[str], min_level: int, max_level: int) 
                 
     return all_items
 
-async def get_ingredients_by_filter(types: List[str], min_level: int, max_level: int) -> List[Ingredient]:
-    items = await fetch_raw_equipment(types, min_level, max_level)
+async def get_ingredients_by_filter(types: List[str], min_level: int, max_level: int, lang: str = "es") -> List[Ingredient]:
+    items = await fetch_raw_equipment(types, min_level, max_level, lang)
             
     unique_ingredients = {} # Map id -> subtype
     
@@ -279,7 +286,7 @@ async def get_ingredients_by_filter(types: List[str], min_level: int, max_level:
                 url_part = "consumables"
                 
             async with sem:
-                return await fetch_ingredient_details(client, ing_id, url_part, 1)
+                return await fetch_ingredient_details(client, ing_id, url_part, 1, lang)
 
         tasks = [fetch_with_sem(ing_id, subtype) for ing_id, subtype in unique_ingredients.items()]
         ingredients = await asyncio.gather(*tasks)

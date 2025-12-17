@@ -7,7 +7,7 @@ from src.services.equipment import fetch_raw_equipment
 from src.services.calculator import get_rune_info, get_stat_density
 from src.models.schemas import ProfitItem, PaginatedProfitResponse
 
-async def calculate_profitability(types: List[str], min_level: int, max_level: int, min_profit: int, min_craft_cost: int, page: int, limit: int, sort_by: str, sort_order: str, db: AsyncSession) -> PaginatedProfitResponse:
+async def calculate_profitability(types: List[str], min_level: int, max_level: int, min_profit: int, min_craft_cost: int, page: int, limit: int, sort_by: str, sort_order: str, db: AsyncSession, lang: str) -> PaginatedProfitResponse:
     # 1. Fetch items
     items = await fetch_raw_equipment(types, min_level, max_level)
     if not items:

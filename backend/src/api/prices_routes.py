@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from src.db.database import get_db
 from src.models.sql_models import RunePriceModel, IngredientPriceModel
-from src.services.calculator import buscar_y_obtener_imagen
+from src.services.calculator import RUNE_DB, buscar_y_obtener_imagen, get_rune_name_translation, get_canonical_rune_name
 
 router = APIRouter(tags=['prices'])
 
@@ -30,10 +30,17 @@ class IngredientPriceUpdate(BaseModel):
     name: str = None
 
 @router.get("/prices/runes", response_model=Dict[str, RunePriceResponse])
-async def get_rune_prices(db: AsyncSession = Depends(get_db)):
+async def get_rune_prices(lang: str = "es", db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(RunePriceModel))
     runes = result.scalars().all()
-    return {rune.rune_name: RunePriceResponse(price=rune.price, image_url=rune.image_url, updated_at=rune.updated_at) for rune in runes}
+    return {
+        get_rune_name_translation(rune.rune_name, lang): RunePriceResponse(
+            price=rune.price, 
+            image_url=rune.image_url, 
+            updated_at=rune.updated_at
+        ) 
+        for rune in runes
+    }
 
 async def fetch_rune_images_task(db: AsyncSession):
     # This needs a new session if running in background, but for now let's try to use the one provided or create new one
@@ -42,60 +49,73 @@ async def fetch_rune_images_task(db: AsyncSession):
     pass
 
 
-COMMON_RUNES = [
-  "Runa Fu", "Runa Inte", "Runa Sue", "Runa Agi",
-  "Runa Vi", "Runa Sa", "Runa Ini", "Runa Pod", "Runa Pot",
-  "Runa Ga PA", "Runa Ga PM", "Runa Al", "Runa Invo",
-  "Runa Cri", "Runa Cu", "Runa Prospe", "Runa Pla", "Runa Hui",
-  "Runa Da Neutral", "Runa Da Tierra", "Runa Da Fuego", "Runa Da Agua", "Runa Da Aire",
-  "Runa Da", "Runa Da Tram", "Runa Da Cri", "Runa Da Emp", "Runa Da Reen", "Runa Por Tram",
-  "Runa Ret PA", "Runa Ret PM", "Runa Re PA", "Runa Re PM",
-  "Runa Re Fuego", "Runa Re Aire", "Runa Re Tierra", "Runa Re Agua", "Runa Re Neutral",
-  "Runa Re Emp", "Runa Re Cri",
-  "Runa Re Fuego Por", "Runa Re Aire Por", "Runa Re Tierra Por", "Runa Re Agua Por", "Runa Re Neutral Por",
-  "Runa Da Por He", "Runa Da Por Ar", "Runa Da Por Di", "Runa Da Por CC",
-  "Runa Re Por CC", "Runa Re Por Di", "Runa de caza"
-]
-
 @router.post("/prices/runes/sync-images")
 async def sync_rune_images(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
-    # Ensure all common runes exist in DB
-    updated_count = 0
+    # --- NEW: Get all valid Spanish rune names from RUNE_DB ---
+    valid_rune_names_es = {
+        data["name"]["es"]
+        for stat_data in RUNE_DB.values()
+        for data in stat_data
+    }
+
+    # --- 1. Delete invalid entries from the database ---
+    result = await db.execute(select(RunePriceModel))
+    all_runes_in_db = result.scalars().all()
+    deleted_count = 0
+    for rune in all_runes_in_db:
+        if rune.rune_name not in valid_rune_names_es:
+            await db.delete(rune)
+            deleted_count += 1
+            print(f"🗑️ Eliminando entrada inválida: {rune.rune_name}")
     
-    for rune_name in COMMON_RUNES:
-        # Check if exists
+    if deleted_count > 0:
+        await db.commit() # Commit deletions
+
+    # --- 2. Ensure all valid runes exist and sync images ---
+    updated_count = 0
+    for rune_name in valid_rune_names_es:
         result = await db.execute(select(RunePriceModel).where(RunePriceModel.rune_name == rune_name))
         rune = result.scalar_one_or_none()
         
         if not rune:
-            # Create if missing
             rune = RunePriceModel(rune_name=rune_name, price=0)
             db.add(rune)
-            # We need to flush to get the object attached, but we can just keep going
         
-        # Fetch image if missing
-        if not rune.image_url:
-            url = await buscar_y_obtener_imagen(rune_name)
-            if url:
-                rune.image_url = url
-                updated_count += 1
+        # We will now always re-fetch the image to ensure it is correct
+        url = await buscar_y_obtener_imagen(rune_name, lang="es") # Search in Spanish for consistency
+        if url and rune.image_url != url:
+            rune.image_url = url
+            updated_count += 1
                 
     await db.commit()
         
-    return {"status": "ok", "updated": updated_count}
+    return {"status": "ok", "updated": updated_count, "deleted": deleted_count}
 
 
 @router.post("/prices/runes")
-async def update_rune_prices(update: RunePriceUpdate, db: AsyncSession = Depends(get_db)):
+async def update_rune_prices(update: RunePriceUpdate, lang: str = "es", db: AsyncSession = Depends(get_db)):
     for name, price in update.prices.items():
-        # Check if exists
-        result = await db.execute(select(RunePriceModel).where(RunePriceModel.rune_name == name))
+        canonical_name = get_canonical_rune_name(name, lang)
+        
+        # --- NEW: Validate that it is a real rune ---
+        is_real_rune = any(
+            data.get("name", {}).get("es") == canonical_name
+            for stat_data in RUNE_DB.values()
+            for data in stat_data
+        )
+        
+        if not is_real_rune:
+            print(f"⚠️ Ignorando '{name}' (canónico: '{canonical_name}') porque no es una runa válida.")
+            continue # Skip if it's not a real rune
+
+        result = await db.execute(select(RunePriceModel).where(RunePriceModel.rune_name == canonical_name))
         rune = result.scalar_one_or_none()
         if rune:
             rune.price = price
         else:
-            rune = RunePriceModel(rune_name=name, price=price)
+            rune = RunePriceModel(rune_name=canonical_name, price=price)
             db.add(rune)
+            
     await db.commit()
     return {"status": "ok"}
 

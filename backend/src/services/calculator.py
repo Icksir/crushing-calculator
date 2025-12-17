@@ -3,19 +3,87 @@ import asyncio
 from src.models.schemas import CalculateRequest, CalculateResponse, RuneBreakdown
 import re
 
+# --- NEW: STAT NAME INTERNATIONALIZATION MAPPING ---
+# Maps API language-specific stat names to a canonical internal name.
+STAT_NAME_MAP = {
+    "en": {
+        "strength": "Fuerza", "intelligence": "Inteligencia", "chance": "Suerte", "agility": "Agilidad",
+        "vitality": "Vitalidad", "wisdom": "Sabiduría", "initiative": "Iniciativa", "pods": "Pods",
+        "power": "Potencia", "ap": "PA", "mp": "PM", "range": "Alcance",
+        "summons": "Invocaciones", "critical hit": "Crítico", "heals": "Curas",
+        "prospecting": "Prospección", "lock": "Placaje", "dodge": "Huida",
+        "neutral damage": "Daños Neutrales", "earth damage": "Daños Tierra", "fire damage": "Daños Fuego", "water damage": "Daños Agua", "air damage": "Daños Aire",
+        "critical damage": "Daños Críticos", "trap damage": "Daños Trampas", "damage": "Daños", "pushback damage": "Empuje",
+        "trap power": "Potencia Trampas", "damage reflection": "Daños Reenvio",
+        "ap reduction": "Retiro PA", "mp reduction": "Retiro PM", "ap loss resistance": "Esquiva PA", "mp loss resistance": "Esquiva PM",
+        "fire resistance": "Resistencia Fuego", "air resistance": "Resistencia Aire", "earth resistance": "Resistencia Tierra", "water resistance": "Resistencia Agua", "neutral resistance": "Resistencia Neutral",
+        "pushback resistance": "Resistencia Empuje", "critical resistance": "Resistencia Críticos",
+        "% fire resistance": "% Resistencia Fuego", "% air resistance": "% Resistencia Aire", "% earth resistance": "% Resistencia Tierra", "% water resistance": "% Resistencia Agua", "% neutral resistance": "% Resistencia Neutral",
+        "% spell damage": "% Daños Hechizos", "% weapon damage": "% Daños Armas", "% distance damage": "% Daños Distancia", "% melee damage": "% Daños Cuerpo a Cuerpo",
+        "% melee resistance": "% Resistencia Cuerpo a Cuerpo", "% distance resistance": "% Resistencia Distancia",
+        "hunting weapon": "Arma de caza"
+    },
+    "fr": {
+        "force": "Fuerza", "intelligence": "Inteligencia", "chance": "Suerte", "agilité": "Agilidad",
+        "vitalité": "Vitalidad", "sagesse": "Sabiduría", "initiative": "Iniciativa", "pods": "Pods",
+        "puissance": "Potencia", "pa": "PA", "pm": "PM", "portée": "Alcance",
+        "invocation": "Invocaciones", "% critique": "Crítico", "soin": "Curas",
+        "prospection": "Prospección", "tacle": "Placaje", "fuite": "Huida",
+        "dommage neutre": "Daños Neutrales", "dommage terre": "Daños Tierra", "dommage feu": "Daños Fuego", "dommage eau": "Daños Agua", "dommages air": "Daños Aire",
+        "dommage critiques": "Daños Críticos", "dommage aux pièges": "Daños Trampas", "dommage": "Daños", "dommage poussée": "Empuje",
+        "puissance des pièges": "Potencia Trampas", "renvoi de dommages": "Daños Reenvio",
+        "retrait pa": "Retiro PA", "retrait pm": "Retiro PM", "esquive pa": "Esquiva PA", "esquive pm": "Esquiva PM",
+        "résistance feu": "Resistencia Fuego", "résistance air": "Resistencia Aire", "résistance terre": "Resistencia Tierra", "résistance eau": "Resistencia Agua", "résistance neutre": "Resistencia Neutral",
+        "résistance poussée": "Resistencia Empuje", "résistance critiques": "Resistencia Críticos",
+        "% résistance feu": "% Resistencia Fuego", "% résistance air": "% Resistencia Aire", "% résistance terre": "% Resistencia Tierra", "% résistance eau": "% Resistencia Agua", "% résistance neutre": "% Resistencia Neutral",
+        "% dommages aux sorts": "% Daños Hechizos", "% dommages d'armes": "% Daños Armas", "% dommages à distance": "% Daños Distancia", "% dommages en mêlée": "% Daños Cuerpo a Cuerpo",
+        "% résistance mêlée": "% Resistencia Cuerpo a Cuerpo", "% résistance à distance": "% Resistencia Distancia",
+        "arme de chasse": "Arma de caza"
+    },
+    "es": {
+        "fuerza": "Fuerza", "inteligencia": "Inteligencia", "suerte": "Suerte", "agilidad": "Agilidad",
+        "vitalidad": "Vitalidad", "sabiduría": "Sabiduría", "iniciativa": "Iniciativa", "pods": "Pods",
+        "potencia": "Potencia", "pa": "PA", "pm": "PM", "alcance": "Alcance",
+        "invocaciones": "Invocaciones", "crítico": "Crítico", "curas": "Curas", "de cura": "Curas",
+        "prospección": "Prospección", "placaje": "Placaje", "huida": "Huida",
+        "daños neutrales": "Daños Neutrales", "de daño neutral": "Daños Neutrales",
+        "daños tierra": "Daños Tierra", "de daño de tierra": "Daños Tierra",
+        "de daño de fuego": "Daños Fuego", "daños fuego": "Daños Fuego",
+        "daños agua": "Daños Agua", "de daño de agua": "Daños Agua",
+        "daños aire": "Daños Aire", "de daño de aire": "Daños Aire",
+        "daños críticos": "Daños Críticos", "daños trampas": "Daños Trampas", "daños": "Daños", "daños de empuje": "Empuje",
+        "potencia (trampas)": "Potencia Trampas", "reenvío de daños": "Daños Reenvio",
+        "retiro pa": "Retiro PA", "al retiro de pa": "Retiro PA",
+        "retiro pm": "Retiro PM", "al retiro de pm": "Retiro PM",
+        "esquiva de pa": "Esquiva PA", "esquiva de pm": "Esquiva PM",
+        "resistencia al fuego": "Resistencia Fuego", "resistencia al aire": "Resistencia Aire", "resistencia a la tierra": "Resistencia Tierra", "resistencia al agua": "Resistencia Agua", "resistencia neutral": "Resistencia Neutral",
+        "resistencia a los daños de empuje": "Resistencia Empuje", "resistencia a los daños críticos": "Resistencia Críticos",
+        "% de resistencia al fuego": "% Resistencia Fuego", "% resistencia al fuego": "% Resistencia Fuego",
+        "% de resistencia al aire": "% Resistencia Aire", "% resistencia al aire": "% Resistencia Aire",
+        "% de resistencia a la tierra": "% Resistencia Tierra", "% resistencia a la tierra": "% Resistencia Tierra",
+        "% de resistencia al agua": "% Resistencia Agua", "% resistencia al agua": "% Resistencia Agua",
+        "% de resistencia neutral": "% Resistencia Neutral", "% resistencia neutral": "% Resistencia Neutral",
+        "% de daños con hechizos": "% Daños Hechizos", "% de daños de arma": "% Daños Armas", "% daños a distancia": "% Daños Distancia", "% daños cuerpo a cuerpo": "% Daños Cuerpo a Cuerpo",
+        "% de resistencia cuerpo a cuerpo": "% Resistencia Cuerpo a Cuerpo", "% de resistencia a distancia": "% Resistencia Distancia",
+        "arma de caza": "Arma de caza"
+    }
+}
+
 # --- 1. TU FUNCIÓN DE BÚSQUEDA (INTEGRADA) ---
 # Mantenemos tu lógica exacta para obtener la imagen.
 
-URL_SEARCH = "https://api.dofusdu.de/dofus3/v1/es/items/resources/search"
+DOFUSDUDE_API_BASE_URL = "https://api.dofusdu.de/dofus3/v1"
 IMAGE_CACHE = {}  # Pequeño caché para no saturar la API
 
-async def buscar_y_obtener_imagen(nombre_runa: str, client: httpx.AsyncClient = None):
+async def buscar_y_obtener_imagen(nombre_runa: str, client: httpx.AsyncClient = None, lang: str = "es"):
     # Revisamos caché primero
-    if nombre_runa in IMAGE_CACHE:
-        return IMAGE_CACHE[nombre_runa]
+    cache_key = f"{nombre_runa}_{lang}"
+    if cache_key in IMAGE_CACHE:
+        return IMAGE_CACHE[cache_key]
 
-    print(f"🔎 Buscando en API: '{nombre_runa}'...")
+    print(f"🔎 Buscando en API ({lang}): '{nombre_runa}'...")
 
+    url = f"{DOFUSDUDE_API_BASE_URL}/{lang}/items/resources/search"
     params = {
         "query": nombre_runa,
         "filter[min_level]": 1,
@@ -25,10 +93,10 @@ async def buscar_y_obtener_imagen(nombre_runa: str, client: httpx.AsyncClient = 
 
     try:
         if client:
-            response = await client.get(URL_SEARCH, params=params, timeout=10.0)
+            response = await client.get(url, params=params, timeout=10.0)
         else:
             async with httpx.AsyncClient() as local_client:
-                response = await local_client.get(URL_SEARCH, params=params, timeout=10.0)
+                response = await local_client.get(url, params=params, timeout=10.0)
             
         if response.status_code != 200:
             print(f"❌ Error API: {response.status_code}")
@@ -40,14 +108,37 @@ async def buscar_y_obtener_imagen(nombre_runa: str, client: httpx.AsyncClient = 
             print(f"❌ No se encontró: {nombre_runa}")
             return None
 
-        # Tomamos el primer resultado
-        mejor_coincidencia = resultados[0]
+        # --- MODIFICATION: Filter for actual runes ---
+        # The API search can be fuzzy. We need to ensure we're getting a rune.
+        runa_keyword = "rune" if lang != "es" else "runa"
+        
+        mejor_coincidencia = None
+        
+        # 1. Prioritize exact match (case-insensitive)
+        for item in resultados:
+            if item.get("name", "").lower() == nombre_runa.lower():
+                mejor_coincidencia = item
+                break
+        
+        # 2. If no exact match, find the first result that looks like a rune
+        if not mejor_coincidencia:
+            for item in resultados:
+                if runa_keyword in item.get("name", "").lower():
+                    mejor_coincidencia = item
+                    break # Take the first likely candidate
+        
+        # 3. If no likely candidate was found, we discard the search result
+        #    to avoid showing a wrong item (e.g. a hat instead of a rune).
+        if not mejor_coincidencia:
+            print(f"⚠️ No se encontró una runa para '{nombre_runa}'. El primer resultado fue '{resultados[0].get('name', 'N/A')}'")
+            return None
+
         imagenes = mejor_coincidencia.get("image_urls", {})
         url_imagen = imagenes.get("icon") or imagenes.get("sd")
         
         if url_imagen:
             # Guardamos en caché y retornamos solo la URL
-            IMAGE_CACHE[nombre_runa] = url_imagen
+            IMAGE_CACHE[cache_key] = url_imagen
             return url_imagen
         
         return None
@@ -79,211 +170,156 @@ STAT_DENSITIES = {
     "% Resistencia Distancia": 10.0
 }
 
-# --- 2. BASE DE DATOS DE RUNAS (100% ESPAÑOL) ---
-# Se han reemplazado los términos franceses (Fo, Ine, Cha, Pui, Do, Ré) 
-# por sus contrapartes en español (Fu, Inte, Sue, Pot, Da, Res).
-
+# --- 2. BASE DE DATOS DE RUNAS 
 RUNE_DB = {
-    # --- ELEMENTALES ---
-    "Fuerza":       [{"name": "Runa Fu",   "weight": 1.0}], # Antes Fo
-    "Inteligencia": [{"name": "Runa Inte", "weight": 1.0}], # Antes Ine
-    "Suerte":       [{"name": "Runa Sue",  "weight": 1.0}], # Antes Cha
-    "Agilidad":     [{"name": "Runa Agi",  "weight": 1.0}], # Agi es igual
+    # --- Características Primarias ---
+    "Fuerza":       [{"name": {"es": "Runa Fu", "en": "Str Rune", "fr": "Rune Fo"}, "weight": 1.0}],
+    "Inteligencia": [{"name": {"es": "Runa Inte", "en": "Int Rune", "fr": "Rune Ine"}, "weight": 1.0}],
+    "Suerte":       [{"name": {"es": "Runa Sue", "en": "Cha Rune", "fr": "Rune Cha"}, "weight": 1.0}],
+    "Agilidad":     [{"name": {"es": "Runa Agi", "en": "Agi Rune", "fr": "Rune Age"}, "weight": 1.0}],
     
-    # --- SECUNDARIOS ---
-    "Vitalidad":    [{"name": "Runa Vi",   "weight": 1.0}],
-    "Sabiduría":    [{"name": "Runa Sa",   "weight": 3.0}],
-    "Iniciativa":   [{"name": "Runa Ini",  "weight": 1.0}], 
-    "Pods":         [{"name": "Runa Pod",  "weight": 2.5}], 
-    "Potencia":     [{"name": "Runa Pot",  "weight": 2.0}], # Antes Pui
+    # --- Características Secundarias ---
+    "Vitalidad":    [{"name": {"es": "Runa Vi", "en": "Vit Rune", "fr": "Rune Vi"}, "weight": 1.0}],
+    "Sabiduría":    [{"name": {"es": "Runa Sa", "en": "Wis Rune", "fr": "Rune Sa"}, "weight": 3.0}],
+    "Iniciativa":   [{"name": {"es": "Runa Ini", "en": "Ini Rune", "fr": "Rune Ini"}, "weight": 1.0}], 
+    "Pods":         [{"name": {"es": "Runa Pod", "en": "Pod Rune", "fr": "Rune Pod"}, "weight": 2.5}], 
+    "Potencia":     [{"name": {"es": "Runa Pot", "en": "Pow Rune", "fr": "Rune Pui"}, "weight": 2.0}],
     
-    # --- MAYORES ---
-    "PA":           [{"name": "Runa Ga PA",  "weight": 100.0}],
-    "PM":           [{"name": "Runa Ga PM", "weight": 90.0}], # Ga Pme suele mantenerse o ser "Runa PM"
-    "Alcance":      [{"name": "Runa Al",     "weight": 51.0}],  # Antes Po (Portée) -> Al (Alcance)
-    "Invocaciones": [{"name": "Runa Invo",   "weight": 30.0}],
+    # --- Características Mayores ---
+    "PA":           [{"name": {"es": "Runa Ga PA", "en": "Ap Ga Rune", "fr": "Rune Ga Pa"}, "weight": 100.0}],
+    "PM":           [{"name": {"es": "Runa Ga PM", "en": "Mp Ga Rune", "fr": "Rune Ga Pme"}, "weight": 90.0}],
+    "Alcance":      [{"name": {"es": "Runa Al", "en": "Range Rune", "fr": "Rune Po"}, "weight": 51.0}],
+    "Invocaciones": [{"name": {"es": "Runa Invo", "en": "Sum Rune", "fr": "Rune Invo"}, "weight": 30.0}],
     
-    # --- COMBATE ---
-    "Crítico":      [{"name": "Runa Cri",    "weight": 10.0}],
-    "Curas":        [{"name": "Runa Cu",     "weight": 10.0}], # Antes So (Soin) -> Cu (Curas)
-    "Prospección":  [{"name": "Runa Prospe",   "weight": 3.0}],  # Antes Prospe
-    "Placaje":      [{"name": "Runa Pla",    "weight": 4.0}],  # Antes Tac (Tacle) -> Pla (Placaje)
-    "Huida":        [{"name": "Runa Hui",    "weight": 4.0}],  # Antes Fui (Fuite) -> Hui (Huida)
+    # --- Combate ---
+    "Crítico":      [{"name": {"es": "Runa Cri", "en": "Cri Rune", "fr": "Rune Cri"}, "weight": 10.0}],
+    "Curas":        [{"name": {"es": "Runa Cu", "en": "Hea Rune", "fr": "Rune So"}, "weight": 10.0}],
+    "Prospección":  [{"name": {"es": "Runa Prospe", "en": "Pp Rune", "fr": "Rune Prospe"}, "weight": 3.0}],
+    "Placaje":      [{"name": {"es": "Runa Pla", "en": "Loc Rune", "fr": "Rune Tac"}, "weight": 4.0}],
+    "Huida":        [{"name": {"es": "Runa Hui", "en": "Dod Rune", "fr": "Rune Fui"}, "weight": 4.0}],
     
-    # --- DAÑOS ELEMENTALES (Do -> Da) ---
-    "Daños Neutrales": [{"name": "Runa Da Neutral", "weight": 5.0}],
-    "Daños Tierra":    [{"name": "Runa Da Tierra", "weight": 5.0}], # Ter -> Tie
-    "Daños Fuego":     [{"name": "Runa Da Fuego", "weight": 5.0}], # Feu -> Fue
-    "Daños Agua":      [{"name": "Runa Da Agua", "weight": 5.0}], # Eau -> Agu
-    "Daños Aire":      [{"name": "Runa Da Aire", "weight": 5.0}], # Air -> Air
+    # --- Daños ---
+    "Daños Neutrales": [{"name": {"es": "Runa Da Neutral", "en": "Neutral Dam Rune", "fr": "Rune Do Neutre"}, "weight": 5.0}],
+    "Daños Tierra":    [{"name": {"es": "Runa Da Tierra", "en": "Earth Dam Rune", "fr": "Rune Do Terre"}, "weight": 5.0}],
+    "Daños Fuego":     [{"name": {"es": "Runa Da Fuego", "en": "Fire Dam Rune", "fr": "Rune Do Feu"}, "weight": 5.0}],
+    "Daños Agua":      [{"name": {"es": "Runa Da Agua", "en": "Water Dam Rune", "fr": "Rune Do Eau"}, "weight": 5.0}],
+    "Daños Aire":      [{"name": {"es": "Runa Da Aire", "en": "Air Dam Rune", "fr": "Rune Do Air"}, "weight": 5.0}],
+    "Daños":           [{"name": {"es": "Runa Da", "en": "Dam Rune", "fr": "Rune Do"}, "weight": 20.0}],
+    "Daños Trampas":   [{"name": {"es": "Runa Da Tram", "en": "Trp Dam Rune", "fr": "Rune Do Pi"}, "weight": 5.0}],
+    "Daños Críticos":  [{"name": {"es": "Runa Da Cri", "en": "Cri Dam Rune", "fr": "Rune Do Cri"}, "weight": 5.0}],
+    "Empuje":          [{"name": {"es": "Runa Da Emp", "en": "Psh Dam Rune", "fr": "Rune Do Pou"}, "weight": 5.0}],
+    "Daños Reenvio":   [{"name": {"es": "Runa Da Reen", "en": "Dam Ref Rune", "fr": "Rune Do Ren"}, "weight": 5.0}],
+    "Potencia Trampas": [{"name": {"es": "Runa Por Tram", "en": "Trp Dam Rune", "fr": "Rune Per Pi"}, "weight": 2.0}],
     
-    # --- OTROS DAÑOS ---
-    "Daños":           [{"name": "Runa Da",      "weight": 20.0}],
-    "Daños Trampas":   [{"name": "Runa Da Tram",  "weight": 5.0}],
-    "Daños Críticos":  [{"name": "Runa Da Cri",  "weight": 5.0}],
-    "Empuje":          [{"name": "Runa Da Emp",  "weight": 5.0}], # Pou -> Emp
-    "Daños Reenvio":   [{"name": "Runa Da Reen", "weight": 5.0}],
-    "Potencia Trampas": [{"name": "Runa Por Tram", "weight": 2.0}],
-    
-    # --- RETIRAS Y ESQUIVAS ---
-    "Retiro PA":  [{"name": "Runa Ret PA",  "weight": 7.0}],
-    "Retiro PM":  [{"name": "Runa Ret PM",  "weight": 7.0}],
-    "Esquiva PA": [{"name": "Runa Re PA",  "weight": 7.0}], # Ré -> Esq (Esquiva)
-    "Esquiva PM": [{"name": "Runa Re PM",  "weight": 7.0}], # Ré -> Esq
+    # --- Retiro y Esquiva ---
+    "Retiro PA":  [{"name": {"es": "Runa Ret PA", "en": "Ap Red Rune", "fr": "Rune Ret Pa"}, "weight": 7.0}],
+    "Retiro PM":  [{"name": {"es": "Runa Ret PM", "en": "Mp Red Rune", "fr": "Rune Ret Pme"}, "weight": 7.0}],
+    "Esquiva PA": [{"name": {"es": "Runa Re PA", "en": "Ap Res Rune", "fr": "Rune Ré Pa"}, "weight": 7.0}],
+    "Esquiva PM": [{"name": {"es": "Runa Re PM", "en": "Mp Res Rune", "fr": "Rune Ré Pme"}, "weight": 7.0}],
 
-    # --- RESISTENCIAS FIJAS (Ré -> Res) ---
-    "Resistencia Fuego":   [{"name": "Runa Re Fuego", "weight": 2.0}],
-    "Resistencia Aire":    [{"name": "Runa Re Aire", "weight": 2.0}],
-    "Resistencia Tierra":  [{"name": "Runa Re Tierra", "weight": 2.0}],
-    "Resistencia Agua":    [{"name": "Runa Re Agua", "weight": 2.0}],
-    "Resistencia Neutral": [{"name": "Runa Re Neutral", "weight": 2.0}],
-    "Resistencia Empuje":  [{"name": "Runa Re Emp", "weight": 2.0}],
-    "Resistencia Críticos":[{"name": "Runa Re Cri", "weight": 2.0}],
+    # --- Resistencias ---
+    "Resistencia Fuego":   [{"name": {"es": "Runa Re Fuego", "en": "Fire Res Rune", "fr": "Rune Ré Feu"}, "weight": 2.0}],
+    "Resistencia Aire":    [{"name": {"es": "Runa Re Aire", "en": "Air Res Rune", "fr": "Rune Ré Air"}, "weight": 2.0}],
+    "Resistencia Tierra":  [{"name": {"es": "Runa Re Tierra", "en": "Earth Res Rune", "fr": "Rune Ré Terre"}, "weight": 2.0}],
+    "Resistencia Agua":    [{"name": {"es": "Runa Re Agua", "en": "Water Res Rune", "fr": "Rune Ré Eau"}, "weight": 2.0}],
+    "Resistencia Neutral": [{"name": {"es": "Runa Re Neutral", "en": "Neutral Res Rune", "fr": "Rune Ré Neutre"}, "weight": 2.0}],
+    "Resistencia Empuje":  [{"name": {"es": "Runa Re Emp", "en": "Psh Res Rune", "fr": "Rune Ré Pou"}, "weight": 2.0}],
+    "Resistencia Críticos":[{"name": {"es": "Runa Re Cri", "en": "Cri Res Rune", "fr": "Rune Ré Cri"}, "weight": 2.0}],
     
-    # --- RESISTENCIAS % (Ré Per -> Res %) ---
-    "% Resistencia Fuego":   [{"name": "Runa Re Fuego Por", "weight": 6.0}],
-    "% Resistencia Aire":    [{"name": "Runa Re Aire Por", "weight": 6.0}],
-    "% Resistencia Tierra":  [{"name": "Runa Re Tierra Por", "weight": 6.0}],
-    "% Resistencia Agua":    [{"name": "Runa Re Agua Por", "weight": 6.0}],
-    "% Resistencia Neutral": [{"name": "Runa Re Neutral Por", "weight": 6.0}],
+    # --- Resistencias % ---
+    "% Resistencia Fuego":   [{"name": {"es": "Runa Re Fuego Por", "en": "Fire Res Per Rune", "fr": "Rune Ré Per Feu"}, "weight": 6.0}],
+    "% Resistencia Aire":    [{"name": {"es": "Runa Re Aire Por", "en": "Air Res Per Rune", "fr": "Rune Ré Per Air"}, "weight": 6.0}],
+    "% Resistencia Tierra":  [{"name": {"es": "Runa Re Tierra Por", "en": "Earth Res Per Rune", "fr": "Rune Ré Per Terre"}, "weight": 6.0}],
+    "% Resistencia Agua":    [{"name": {"es": "Runa Re Agua Por", "en": "Water Res Per Rune", "fr": "Rune Ré Per Eau"}, "weight": 6.0}],
+    "% Resistencia Neutral": [{"name": {"es": "Runa Re Neutral Por", "en": "Neutral Res Per Rune", "fr": "Rune Ré Per Neutre"}, "weight": 6.0}],
 
-    # --- NUEVAS RUNAS (DOFUS 3 / SCRIPT) ---
-    "% Daños Hechizos": [{"name": "Runa Da Por He", "weight": 15.0}],
-    "% Daños Armas": [{"name": "Runa Da Por Ar", "weight": 15.0}],
-    "% Daños Distancia": [{"name": "Runa Da Por Di", "weight": 15.0}],
-    "% Daños Cuerpo a Cuerpo": [{"name": "Runa Da Por CC", "weight": 15.0}],
-    "% Resistencia Cuerpo a Cuerpo": [{"name": "Runa Re Por CC", "weight": 10.0}],
-    "% Resistencia Distancia": [{"name": "Runa Re Por Di", "weight": 10.0}],
-    "Arma de caza": [{"name": "Runa de caza", "weight": 5.0}],
+    # --- Daños % ---
+    "% Daños Hechizos": [{"name": {"es": "Runa Da Por He", "en": "Spe Dam Per Rune", "fr": "Rune Do Per So"}, "weight": 15.0}],
+    "% Daños Armas": [{"name": {"es": "Runa Da Por Ar", "en": "Wep Dam Per Rune", "fr": "Rune Do Per Ar"}, "weight": 15.0}],
+    "% Daños Distancia": [{"name": {"es": "Runa Da Por Di", "en": "Dis Dam Per Rune", "fr": "Rune Do Per Di"}, "weight": 15.0}],
+    "% Daños Cuerpo a Cuerpo": [{"name": {"es": "Runa Da Por CC", "en": "Mel Dam Per Rune", "fr": "Rune Do Per Mé"}, "weight": 15.0}],
+    
+    # --- Resistencia % (Melee/Dist) ---
+    "% Resistencia Cuerpo a Cuerpo": [{"name": {"es": "Runa Re Por CC", "en": "Mel Res Per Rune", "fr": "Rune Ré Per Mé"}, "weight": 10.0}],
+    "% Resistencia Distancia": [{"name": {"es": "Runa Re Por Di", "en": "Dis Res Per Rune", "fr": "Rune Ré Per Di"}, "weight": 10.0}],
+    
+    # --- Especiales ---
+    "Arma de caza": [{"name": {"es": "Runa de caza", "en": "Hunting Rune", "fr": "Rune de chasse"}, "weight": 5.0}],
 }
 
 # --- 4. HELPERS ---
 
-def normalize_stat_name(raw_name: str) -> str:
+def get_canonical_stat_name(stat_name: str, lang: str = "es") -> str:
     """
-    Convierte cualquier variación de texto OCR/User input en la Key Oficial
-    de Dofus 3.4.
-    Ej: "de resistencia a la tierra" -> "Resistencia Tierra"
-    Ej: "% res fuego" -> "% Resistencia Fuego"
+    Converts a localized stat name (e.g., 'Force' in FR) to the canonical key used in RUNE_DB (e.g., 'Fuerza').
     """
-    # 1. Limpieza inicial: Minúsculas y quitar acentos básicos para facilitar regex
-    text = raw_name.lower().strip()
-    replacements = (('á', 'a'), ('é', 'e'), ('í', 'i'), ('ó', 'o'), ('ú', 'u'), ('.', ''))
-    for old, new in replacements:
-        text = text.replace(old, new)
+    stat_lower = stat_name.lower()
     
-    # 2. Detectar Elementos (Tokens comunes)
-    element = None
-    if "fuego" in text or "inte" in text: element = "Fuego"
-    elif "tierra" in text or "fuerza" in text and "res" in text: element = "Tierra" # Cuidado con confundir stat Fuerza
-    elif "agua" in text or "suerte" in text and "res" in text: element = "Agua"
-    elif "aire" in text or "agilidad" in text and "res" in text: element = "Aire"
-    elif "neutral" in text or "neutro" in text: element = "Neutral"
-    elif "empuje" in text: element = "Empuje"
-    elif "critico" in text: element = "Críticos"
-    elif "trampa" in text: element = "Trampas"
-    elif "cac" in text or "cuerpo" in text: element = "Cuerpo a Cuerpo"
-    elif "distancia" in text: element = "Distancia"
-    elif "arma" in text: element = "Armas"
-    elif "hechizo" in text: element = "Hechizos"
+    # 1. Try direct lookup in the specific language map
+    if lang in STAT_NAME_MAP:
+        if stat_lower in STAT_NAME_MAP[lang]:
+            return STAT_NAME_MAP[lang][stat_lower]
+            
+    # 2. Fallback: Check if it's already a canonical key (Spanish keys in RUNE_DB)
+    # This handles cases where the input is already "Fuerza" or "PA"
+    if stat_name in RUNE_DB:
+        return stat_name
+        
+    # 3. Fallback: Return as is (might fail lookup but better than crashing)
+    return stat_name
 
-    # 3. Detectar si es Porcentual (%)
-    is_percent = "%" in text
-
-    # --- LÓGICA DE CATEGORÍAS ---
-
-    # A. RESISTENCIAS (La más compleja de mapear)
-    # Detecta: "resistencia", "res", "resis"
-    if re.search(r'\bres(?:is|istencia)?\b', text):
-        if not element: return "Resistencia" # Caso raro
-        prefix = "% " if is_percent else ""
-        return f"{prefix}Resistencia {element}"
-
-    # A.1 POTENCIA (Prioridad Alta para evitar confusión con Daños)
-    if "potencia" in text or "pui" in text: 
-        if "trampa" in text: return "Potencia Trampas"
-        return "Potencia"
-
-    # B. DAÑOS (Daños fijos, elementales, especiales)
-    # Detecta: "daño", "danos", "do"
-    if re.search(r'\b(?:da|do)(?:ñ|n)os?\b', text):
-        prefix = "% " if is_percent else ""
-        if "reenvio" in text: return "Daños Reenvio"
-        if element:
-            if element == "Neutral": return f"{prefix}Daños Neutrales"
-            if element == "Empuje": return "Empuje"
-            return f"{prefix}Daños {element}"
-        # Fix: Ensure "Daños" doesn't match "Daños Críticos" or "Daños Trampas" if they were not caught by element
-        if "critico" in text: return "Daños Críticos"
-        if "trampa" in text: return "Daños Trampas"
-        return "Daños" # Daños genéricos
-
-    # C. RETIRAS Y ESQUIVAS
-    # Detecta "retiro", "ret"
-    if "retiro" in text or "ret" in text:
-        if "pm" in text: return "Retiro PM"
-        if "pa" in text: return "Retiro PA"
-    
-    # Detecta "esquiva", "esq"
-    if "esquiva" in text or "esq" in text:
-        if "pm" in text: return "Esquiva PM"
-        if "pa" in text: return "Esquiva PA"
-
-    # D. STATS BASE (Simples)
-    # Usamos "startswith" o regex simple para evitar falsos positivos
-    if "vitalidad" in text or text == "vit": return "Vitalidad"
-    if "sabiduria" in text or text == "sab": return "Sabiduría"
-    if "inteligencia" in text or text == "inte": return "Inteligencia"
-    if "fuerza" in text or text == "fo": return "Fuerza"
-    if "agilidad" in text or text == "agi": return "Agilidad"
-    if "suerte" in text or text == "cha": return "Suerte"
-    
-    # E. OTROS
-    if "iniciativa" in text or "ini" in text: return "Iniciativa"
-    if "prospeccion" in text or "pros" in text: return "Prospección"
-    # Potencia moved to A.1
-    if "pod" in text: return "Pods"
-    if "curas" in text or "curaciones" in text or "cura" in text: return "Curas"
-    if "placaje" in text: return "Placaje"
-    if "huida" in text: return "Huida"
-    if "invoca" in text: return "Invocaciones"
-    if "alcance" in text or re.match(r'\bal\b', text) or text == "po": return "Alcance"
-    if "caza" in text: return "Arma de caza"
-    
-    # F. CRÍTICO (Solo)
-    if "critico" in text and "daño" not in text and "res" not in text:
-        return "Crítico"
-
-    # G. PA / PM (Tokens cortos, cuidado con falsos positivos)
-    # Buscamos PA o PM aislado, o al inicio/fin
-    if re.search(r'\bpa\b', text) and "opa" not in text: return "PA"
-    if re.search(r'\bpm\b', text): return "PM"
-
-    # Fallback: Retornar el original capitalizado si no se encontró nada
-    return raw_name.title()
-
-def get_rune_info(stat_name: str):
-    # 1. Normalizamos el nombre sucio a la Key Oficial
-    official_name = normalize_stat_name(stat_name)
-    
-    # 2. Buscamos directamente en la DB
-    if official_name in RUNE_DB:
-        return RUNE_DB[official_name][0]
-    
+def get_rune_info(stat_name: str, lang: str = "es"):
+    canonical_name = get_canonical_stat_name(stat_name, lang)
+    if canonical_name in RUNE_DB:
+        rune_data = RUNE_DB[canonical_name][0]
+        # Return a copy with the translated name
+        return {
+            "name": rune_data["name"].get(lang, rune_data["name"]["es"]),
+            "weight": rune_data["weight"]
+        }
     return None
 
-def get_stat_density(stat_name: str) -> float:
-    # 1. Normalizamos
-    official_name = normalize_stat_name(stat_name)
-    
-    # 2. Buscamos densidad
-    return STAT_DENSITIES.get(official_name, 0.0)
+def get_rune_name_translation(rune_name_es: str, target_lang: str = "es") -> str:
+    """
+    Translates a rune name from Spanish (DB key) to the target language.
+    """
+    if target_lang == "es":
+        return rune_name_es
+        
+    # Search in RUNE_DB
+    for stat, data_list in RUNE_DB.items():
+        for data in data_list:
+            names = data.get("name", {})
+            if names.get("es") == rune_name_es:
+                return names.get(target_lang, rune_name_es)
+                
+    return rune_name_es
+
+def get_canonical_rune_name(rune_name: str, lang: str = "es") -> str:
+    """
+    Converts a localized rune name (e.g. 'Rune Fo') back to the canonical Spanish name (e.g. 'Runa Fu').
+    """
+    if lang == "es":
+        return rune_name
+        
+    for stat, data_list in RUNE_DB.items():
+        for data in data_list:
+            names = data.get("name", {})
+            if names.get(lang) == rune_name:
+                return names.get("es", rune_name)
+                
+    return rune_name
+
+def get_stat_density(stat_name: str, lang: str = "es") -> float:
+    canonical_name = get_canonical_stat_name(stat_name, lang)
+    return STAT_DENSITIES.get(canonical_name, 0.0)
 
 async def calculate_profit(request: CalculateRequest) -> CalculateResponse:
     total_rune_value = 0.0
     breakdown_list = []
     
     # 1. VALIDACIÓN Y PREPARACIÓN
+    lang = getattr(request, "lang", "es")
     item_lvl = getattr(request, "item_level", 200) 
     server_coef = request.coefficient / 100.0
 
@@ -294,7 +330,7 @@ async def calculate_profit(request: CalculateRequest) -> CalculateResponse:
     total_vr_sum = 0.0 # Suma total de todos los VR del objeto
 
     for stat in request.stats:
-        density = get_stat_density(stat.name)
+        density = get_stat_density(stat.name, lang)
         value = stat.value
         
         # Ajustes especiales según el script
@@ -321,7 +357,7 @@ async def calculate_profit(request: CalculateRequest) -> CalculateResponse:
     # --- OPTIMIZACIÓN: Pre-cargar imágenes en paralelo ---
     rune_names_to_fetch = set()
     for stat in request.stats:
-        rune_info = get_rune_info(stat.name)
+        rune_info = get_rune_info(stat.name, lang)
         if rune_info:
             rune_names_to_fetch.add(rune_info["name"])
     
@@ -329,13 +365,13 @@ async def calculate_profit(request: CalculateRequest) -> CalculateResponse:
     if rune_names_to_fetch:
         names_list = list(rune_names_to_fetch)
         async with httpx.AsyncClient() as client:
-            tasks = [buscar_y_obtener_imagen(name, client) for name in names_list]
+            tasks = [buscar_y_obtener_imagen(name, client, lang) for name in names_list]
             results = await asyncio.gather(*tasks)
             image_map = dict(zip(names_list, results))
     # -----------------------------------------------------
 
     for stat in request.stats:
-        rune_info = get_rune_info(stat.name)
+        rune_info = get_rune_info(stat.name, lang)
         
         # Si no tiene runa asociada, saltamos
         if not rune_info:
@@ -404,7 +440,7 @@ async def calculate_profit(request: CalculateRequest) -> CalculateResponse:
             stat=stat.name,
             rune_name=rune_name,
             rune_image=rune_image,
-            weight=get_stat_density(stat.name),
+            weight=get_stat_density(stat.name, lang),
             
             # Normal
             count=round(count_normal, 2),

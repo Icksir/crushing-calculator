@@ -39,6 +39,7 @@ class CalculateRequest(BaseModel):
     coefficient: float        # Coeficiente en % (ej: 211)
     item_cost: float
     rune_prices: Dict[str, float]
+    lang: str = "es"
 
 class RuneBreakdown(BaseModel):
     stat: str
@@ -81,4 +82,4 @@ class PaginatedProfitResponse(BaseModel):
     total: int
     page: int
     size: int
-    total_pages: int 
+    total_pages: int

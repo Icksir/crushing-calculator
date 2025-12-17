@@ -1,4 +1,3 @@
-
 from typing import List
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,27 +25,29 @@ async def get_best_profit_items(
     limit: int = 10,
     sort_by: str = "profit",
     sort_order: str = "desc",
+    lang: str = "es",
     db: AsyncSession = Depends(get_db)
 ):
     type_list = types.split(",")
-    return await calculate_profitability(type_list, min_level, max_level, min_profit, min_craft_cost, page, limit, sort_by, sort_order, db)
+    return await calculate_profitability(type_list, min_level, max_level, min_profit, min_craft_cost, page, limit, sort_by, sort_order, db, lang)
 
 @router.get("/items/search", response_model=List[ItemSearchResponse])
-async def search_items_endpoint(query: str = Query(..., min_length=2)):
-    return await search_equipment(query)
+async def search_items_endpoint(query: str = Query(..., min_length=2), lang: str = "es"):
+    return await search_equipment(query, lang)
 
 @router.get("/items/ingredients/filter", response_model=List[Ingredient])
 async def get_ingredients_filter(
     types: str = Query(..., description="Comma separated types"),
     min_level: int = 1,
-    max_level: int = 200
+    max_level: int = 200,
+    lang: str = "es"
 ):
     type_list = types.split(",")
-    return await get_ingredients_by_filter(type_list, min_level, max_level)
+    return await get_ingredients_by_filter(type_list, min_level, max_level, lang)
 
 @router.get("/items/{ankama_id}", response_model=ItemDetailsResponse)
-async def get_item_details_endpoint(ankama_id: int, db: AsyncSession = Depends(get_db)):
-    item = await get_item_details(ankama_id)
+async def get_item_details_endpoint(ankama_id: int, lang: str = "es", db: AsyncSession = Depends(get_db)):
+    item = await get_item_details(ankama_id, lang)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
         
@@ -71,6 +72,7 @@ async def get_item_details_endpoint(ankama_id: int, db: AsyncSession = Depends(g
 async def save_item_coefficient(
     ankama_id: int, 
     request: ItemCoefficientRequest, 
+    lang: str = "es",
     db: AsyncSession = Depends(get_db)
 ):
     # 1. Save History
@@ -83,7 +85,7 @@ async def save_item_coefficient(
     # 2. Gather Data for PredictionDataset
     try:
         # A. Get Item Details
-        item = await get_item_details(ankama_id)
+        item = await get_item_details(ankama_id, lang)
         if not item:
             await db.commit()
             return {"status": "success", "warning": "Item details not found for prediction"}
