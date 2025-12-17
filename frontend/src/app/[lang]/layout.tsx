@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
-import { LanguageProvider, Language, translations } from "@/context/LanguageContext";
+import { LanguageProvider} from "@/context/LanguageContext";
 import { RunePriceProvider } from "@/context/RunePriceContext";
+import { translations, Language } from "@/constants/translations"; // Ajusta la ruta
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,8 +22,13 @@ export async function generateMetadata({
   params: Promise<{ lang: Language }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const langValue = lang || 'es'; // Fallback a español si no se especifica
-  const t = (key: string) => translations[langValue]?.[key] || key;
+  
+  // Validación robusta
+  const supportedLangs = ['es', 'en', 'fr'];
+  const currentLang = supportedLangs.includes(lang) ? lang : 'es';
+
+  // Acceso directo al objeto estático
+  const t = (key: string) => translations[currentLang]?.[key] || key;
 
   return {
     metadataBase: new URL('https://kamaskope.icksir.com'),
@@ -32,7 +38,7 @@ export async function generateMetadata({
       icon: '/logo.svg',
     },
     alternates: {
-      canonical: './',
+      canonical: './${currentLang}',
       languages: {
         'en': '/en',
         'es': '/es',
@@ -53,7 +59,7 @@ export async function generateMetadata({
           alt: t('logo_alt_text'),
         },
       ],
-      locale: langValue === 'es' ? 'es_ES' : langValue === 'en' ? 'en_US' : 'fr_FR',
+      locale: currentLang === 'es' ? 'es_ES' : currentLang === 'en' ? 'en_US' : 'fr_FR',
       type: "website",
     },
     twitter: {
