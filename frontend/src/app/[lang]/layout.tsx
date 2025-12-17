@@ -15,7 +15,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Ahora metadata es una función asíncrona que genera los metadatos dinámicamente
 export async function generateMetadata({
   params,
 }: {
@@ -23,12 +22,24 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   
-  // Validación robusta
   const supportedLangs = ['es', 'en', 'fr'];
   const currentLang = supportedLangs.includes(lang) ? lang : 'es';
 
-  // Acceso directo al objeto estático
-  const t = (key: string) => translations[currentLang]?.[key] || key;
+  // --- DEBUGGING: MIRA TU TERMINAL ---
+  console.log("IDIOMA ACTUAL:", currentLang);
+  console.log("TRADUCCIONES CARGADAS:", translations ? "SÍ" : "NO");
+  if (translations && translations[currentLang]) {
+      console.log("EJEMPLO TITULO:", translations[currentLang]['meta_title']);
+  } else {
+      console.error("ERROR CRÍTICO: No se encuentran traducciones para", currentLang);
+  }
+  // -----------------------------------
+
+  // Acceso seguro con fallback
+  const t = (key: string) => {
+    // Si translations es undefined, esto evita que la app explote y devuelve la key
+    return translations?.[currentLang]?.[key] || key; 
+  };
 
   return {
     metadataBase: new URL('https://kamaskope.icksir.com'),
@@ -38,7 +49,8 @@ export async function generateMetadata({
       icon: '/logo.svg',
     },
     alternates: {
-      canonical: './${currentLang}',
+      // CORRECCIÓN AQUÍ: Usar backticks ` ` para interpolación
+      canonical: `./${currentLang}`, 
       languages: {
         'en': '/en',
         'es': '/es',
@@ -79,10 +91,12 @@ export default async function RootLayout({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
+  
   return (
-    <html lang={lang} className="dark">
+    <html lang={lang || 'es'} className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
-        <LanguageProvider initialLanguage={lang as Language}>
+        {/* Validamos lang antes de pasarlo */}
+        <LanguageProvider initialLanguage={(lang as Language) || 'es'}>
           <RunePriceProvider>
             {children}
           </RunePriceProvider>
