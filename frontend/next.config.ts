@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  
   images: {
     remotePatterns: [
       {
@@ -12,6 +13,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  
   async rewrites() {
     return [
       {
@@ -20,6 +22,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // Enable React strict mode for better development experience
+  reactStrictMode: true,
 };
 
 export default nextConfig;
