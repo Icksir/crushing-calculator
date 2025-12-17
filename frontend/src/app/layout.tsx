@@ -15,10 +15,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kamaskope",
-  description: "Conoce los coeficientes",
+  title: "Kamaskope - Calculadora de Runas Dofus y Precios de Forjamagia",
+  description: "Calculadora de runas y precios de forjamagia para Dofus. Optimiza tus ganancias rompiendo objetos y gestionando tus recursos con coeficientes actualizados.",
   icons: {
     icon: '/logo.svg',
+  },
+  openGraph: {
+    title: "Kamaskope - Calculadora de Runas Dofus y Precios de Forjamagia",
+    description: "Calculadora de runas y precios de forjamagia para Dofus. Optimiza tus ganancias rompiendo objetos y gestionando tus recursos con coeficientes actualizados.",
+    url: "https://kamaskope.icksir.com/",
+    siteName: "Kamaskope",
+    images: [
+      {
+        url: "https://kamaskope.icksir.com/logo.svg",
+        width: 32,
+        height: 32,
+        alt: "Kamaskope Logo",
+      },
+    ],
+    locale: "es_ES",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kamaskope - Calculadora de Runas Dofus y Precios de Forjamagia",
+    description: "Calculadora de runas y precios de forjamagia para Dofus. Optimiza tus ganancias rompiendo objetos y gestionando tus recursos con coeficientes actualizados.",
+    images: ["https://kamaskope.icksir.com/logo.svg"],
   },
 };
 
