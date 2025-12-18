@@ -7,10 +7,9 @@ from src.models.schemas import ItemDetailsResponse, ItemSearchResponse, ItemCoef
 from src.models.sql_models import ItemCoefficientHistoryModel, PredictionDataset, IngredientPriceModel, RunePriceModel
 from src.services.equipment import get_item_details, search_equipment, get_ingredients_by_filter
 from src.services.profit import calculate_profitability
-from src.services.calculator import get_stat_density, get_rune_info
-from src.models.schemas import Ingredient, ProfitItem, PaginatedProfitResponse
+from src.services.calculator import calculate_profit, get_canonical_stat_name
+from src.models.schemas import Ingredient, PaginatedProfitResponse, CalculateRequest
 from datetime import datetime
-import math
 
 router = APIRouter(tags=['items'])
 
@@ -78,6 +77,30 @@ async def save_item_coefficient(
     server: str = "Dakal",
     db: AsyncSession = Depends(get_db)
 ):
+    # 0. Get Previous Coefficient (Trend) - BEFORE adding new entry
+    # Buscamos el último coeficiente registrado para este ítem y servidor
+    prev_entry_query = select(ItemCoefficientHistoryModel).where(
+        ItemCoefficientHistoryModel.item_id == ankama_id,
+        ItemCoefficientHistoryModel.server == server
+    ).order_by(desc(ItemCoefficientHistoryModel.created_at)).limit(1)
+    
+    prev_entry_res = await db.execute(prev_entry_query)
+    prev_entry = prev_entry_res.scalar_one_or_none()
+    
+    previous_coefficient_24h = prev_entry.coefficient if prev_entry else None
+    
+    days_since = 0.0
+    if prev_entry:
+        last_time = prev_entry.created_at
+        if last_time.tzinfo:
+            now = datetime.now(last_time.tzinfo)
+        else:
+            now = datetime.now()
+        diff = now - last_time
+        days_since = diff.total_seconds() / 86400.0
+    else:
+        days_since = -1
+
     # 1. Save History
     new_entry = ItemCoefficientHistoryModel(
         item_id=ankama_id,
@@ -109,95 +132,67 @@ async def save_item_coefficient(
                 if price > 0:
                     craft_cost += price * ing.quantity
         
-        # D. Calculate Rune Value at 100%
-        rune_value_100 = 0
+        # D. Calculate Rune Value at Real Coefficient
+        rune_value_real = 0
+        profit_amount = 0
+        has_high_value_rune = False
+        dominant_rune_type = "Generic"
+        
         if item.stats:
-            stat_vrs = {}
-            total_vr_sum = 0
-            item_level = item.level
-            
+            # 1. Detect High Value Runes (Flag only)
             for stat in item.stats:
-                density = get_stat_density(stat.name)
-                value = stat.value
-                
-                if stat.name in {"PA", "PM", "Alcance", "Invocaciones"} and 0 <= value <= 1:
-                    value = 1
-                if stat.name == "Pods":
-                    value = value / 2.5
-                
-                if value > 0:
-                    vr = ((value * density * item_level * 0.0150) + 1)
-                else:
-                    vr = 0
-                
-                stat_vrs[stat.name] = vr
-                total_vr_sum += vr
+                canonical = get_canonical_stat_name(stat.name, lang)
+                if stat.value > 0 and canonical in {"PA", "PM", "Alcance", "Crítico"}:
+                    has_high_value_rune = True
+
+            # 2. Use Calculator Service to determine dominant rune and value
+            # We use the REAL coefficient entered by the user
+            calc_req = CalculateRequest(
+                item_level=item.level,
+                stats=item.stats,
+                coefficient=request.coefficient, 
+                item_cost=craft_cost,
+                rune_prices=rune_prices,
+                lang=lang,
+                server=server
+            )
             
-            max_focus_val = 0
-            normal_val = 0
+            calc_res = await calculate_profit(calc_req)
             
-            for stat in item.stats:
-                rune_info = get_rune_info(stat.name)
-                if not rune_info: continue
-                
-                rune_weight = rune_info["weight"]
-                rune_name = rune_info["name"]
-                price = rune_prices.get(rune_name, 0)
-                
-                vr_propio = stat_vrs.get(stat.name, 0)
-                
-                # Normal (at 100%)
-                count_normal = vr_propio / rune_weight
-                normal_val += count_normal * price
-                
-                # Focus (at 100%)
-                vr_resto = total_vr_sum - vr_propio
-                vr_focus = vr_propio + (0.5 * vr_resto)
-                if stat.name == "Pods": vr_focus /= 2.5
-                
-                count_focus = vr_focus / rune_weight
-                focus_val = count_focus * price
-                
-                if focus_val > max_focus_val:
-                    max_focus_val = focus_val
+            # total_estimated_value is the Revenue of the best strategy (Normal or Focus)
+            rune_value_real = calc_res.total_estimated_value
+            profit_amount = calc_res.net_profit
             
-            rune_value_100 = max(normal_val, max_focus_val)
+            # Determine dominant rune type based on which strategy yielded more profit
+            # If net_profit matches max_focus_profit, it means Focus was selected
+            if calc_res.net_profit == calc_res.max_focus_profit and calc_res.best_focus_stat:
+                dominant_rune_type = get_canonical_stat_name(calc_res.best_focus_stat, lang)
+            else:
+                dominant_rune_type = "Mixed"
 
         # E. Calculate Features
-        ratio_profit = (rune_value_100 / craft_cost) if craft_cost > 0 else 0
+        ratio_profit = (rune_value_real / craft_cost) if craft_cost > 0 else 0
         
-        # F. Get Previous Update Time
-        prev_entry_query = select(ItemCoefficientHistoryModel).where(
-            ItemCoefficientHistoryModel.item_id == ankama_id
-        ).order_by(desc(ItemCoefficientHistoryModel.created_at)).limit(1)
-        
-        prev_entry_res = await db.execute(prev_entry_query)
-        prev_entry = prev_entry_res.scalar_one_or_none()
-        
-        days_since = 0.0
-        if prev_entry:
-            last_time = prev_entry.created_at
-            if last_time.tzinfo:
-                now = datetime.now(last_time.tzinfo)
-            else:
-                now = datetime.now()
-            diff = now - last_time
-            days_since = diff.total_seconds() / 86400.0
-        else:
-            days_since = -1
-
         # G. Create Prediction Entry
         now_dt = datetime.now()
         
         pred_entry = PredictionDataset(
             item_id=ankama_id,
+            server=server, # CRÍTICO: Contexto macroeconómico
             real_coefficient=request.coefficient,
             craft_cost=craft_cost,
-            rune_value_100=rune_value_100,
+            rune_value_real=rune_value_real, # NOTE: Storing value at REAL coefficient here
             ratio_profit=ratio_profit,
+            profit_amount=profit_amount,    # Nuevo: Profit plano
             item_level=item.level,
             item_type=item.type or "Unknown",
             recipe_difficulty=len(item.recipe) if item.recipe else 0,
+            
+            # Nuevos Features
+            has_high_value_rune=has_high_value_rune,
+            dominant_rune_type=dominant_rune_type,
+            previous_coefficient_24h=previous_coefficient_24h,
+            
             day_of_week=now_dt.weekday(),
             hour_of_day=now_dt.hour,
             days_since_last_update=days_since
