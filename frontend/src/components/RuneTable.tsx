@@ -21,9 +21,12 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
   const { runePrices, updatePrice } = useRunePrices();
   const { t } = useLanguage();
 
-  const handleStatValueChange = (index: number, newValue: number) => {
+  // CAMBIO 1: Aceptamos string temporalmente para permitir escribir el guion "-"
+  const handleStatValueChange = (index: number, newValue: number | string) => {
     const newStats = [...stats];
-    newStats[index] = { ...newStats[index], value: newValue };
+    // Forzamos el tipado 'as number' para evitar errores de TS con la interfaz ItemStat
+    // aunque temporalmente guardemos un string ("-")
+    newStats[index] = { ...newStats[index], value: newValue as number };
     onStatChange(newStats);
   };
 
@@ -110,12 +113,29 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
                 <div className="flex items-center justify-center gap-1 text-base bg-muted/30 rounded-md p-1 border border-transparent group-hover:border-border transition-colors">
                   <span className="text-muted-foreground w-8 text-right text-sm">{stat.min}</span>
                   <span className="text-muted-foreground/30">·</span>
+                  
+                  {/* CAMBIO 2: Input Logic corregida */}
                   <Input 
-                    type="number" 
+                    type="text" 
+                    inputMode="numeric" // Ayuda en móviles
+                    pattern="-?[0-9]*"
                     className="w-16 h-8 text-center font-bold text-lg bg-background shadow-sm border-input focus-visible:ring-1 no-spinner"
                     value={stat.value}
-                    onChange={(e) => handleStatValueChange(index, Number(e.target.value))}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      
+                      // Regex: Permite string vacío, solo guion "-", o guion opcional con numeros "-50"
+                      if (newValue === '' || newValue === '-') {
+                        // Pasamos el string tal cual para que se vea el "-"
+                        handleStatValueChange(index, newValue);
+                      } else if (/^-?\d*$/.test(newValue)) {
+                        // Si es un número válido, lo convertimos a entero
+                        handleStatValueChange(index, parseInt(newValue, 10));
+                      }
+                      // Si escribe letras u otros símbolos, no hace nada (ignora el input)
+                    }}
                   />
+
                   <span className="text-muted-foreground/30">·</span>
                   <span className="text-muted-foreground w-8 text-left text-sm">{stat.max}</span>
                 </div>
