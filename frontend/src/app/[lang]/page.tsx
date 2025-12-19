@@ -23,8 +23,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChevronDown } from 'lucide-react';
 
 const SERVERS = [
-  'Dakal', 'Mikhal', 'Draconiros', 'Tal Kasha', 'Imagiro', 
-  'Orukam', 'Hell Mina', 'Tylezia', 'Rafal', 'Brial', 'Salar'
+  'Dakal', 'Brial', 'Draconiros', 'Hell Mina', 'Imagiro', 'Kourial',
+  'Mikhal', 'Orukam', 'Rafal', 'Salar', 'Tal Kasha', 'Tylezia'
 ];
 
 const Calculator = () => {
@@ -489,7 +489,7 @@ const Calculator = () => {
                       </div>
                       <Separator />
                       <div className="flex justify-between text-base items-center pt-1">
-                        <span className="text-muted-foreground">{t('min_coefficient')}</span>
+                        <span className="text-muted-foreground">{t('min_coefficient')}:</span>
                         <span className={`font-bold px-2 py-0.5 rounded ${
                           liveMetrics.breakEvenCoeff <= (coeff === '' ? 0 : coeff) 
                             ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
