@@ -67,19 +67,6 @@ export default async function RootLayout({
   
   return (
     <html lang={lang || 'es'} className="dark">
-      {process.env.NEXT_PUBLIC_GA_ID && (
-        <>
-          <Script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} />
-          <Script id="google-analytics">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-            `}
-          </Script>
-        </>
-      )}
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans flex flex-col min-h-screen`}>
         <LanguageProvider initialLanguage={(lang as Language) || 'es'}>
           <RunePriceProvider>
