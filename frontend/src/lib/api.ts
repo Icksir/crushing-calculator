@@ -179,3 +179,14 @@ export const calculateProfit = async (data: CalculateRequest) => {
   const response = await api.post<CalculateResponse>('/api/calculate', data);
   return response.data;
 };
+
+export const getMaintenanceStatus = async () => {
+  const res = await api.get('/api/maintenance', {
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
+  });
+  return res.data;
+};
