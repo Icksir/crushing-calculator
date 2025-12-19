@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "../globals.css";
 import { LanguageProvider} from "@/context/LanguageContext";
 import { RunePriceProvider } from "@/context/RunePriceContext";
@@ -94,6 +95,19 @@ export default async function RootLayout({
   
   return (
     <html lang={lang || 'es'} className="dark">
+            {process.env.NEXT_PUBLIC_GA_ID && (
+        <>
+          <Script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} />
+          <Script id="google-analytics">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+            `}
+          </Script>
+        </>
+      )}
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
         {/* Validamos lang antes de pasarlo */}
         <LanguageProvider initialLanguage={(lang as Language) || 'es'}>
