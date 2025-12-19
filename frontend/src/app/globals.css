@@ -157,3 +157,22 @@ input[type="number"] {
 .no-spinner {
   -moz-appearance: textfield !important;
 }
+
+@keyframes marquee {
+  0% {
+    transform: translateX(100%); /* Empieza fuera, a la derecha */
+  }
+  100% {
+    transform: translateX(-100%); /* Termina fuera, a la izquierda */
+  }
+}
+
+.animate-marquee {
+  /* Duración 20s, lineal (sin aceleración), infinita */
+  animation: marquee 40s linear infinite; 
+}
+
+/* Opcional: Pausar el texto si pasas el mouse por encima */
+.animate-marquee:hover {
+  animation-play-state: paused;
+}

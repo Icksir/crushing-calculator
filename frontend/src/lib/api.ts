@@ -165,6 +165,11 @@ export interface CalculateResponse {
   coefficient: number;
 }
 
+export interface MaintenanceResponse {
+  active: boolean;
+  messages: Record<string, string>; 
+}
+
 export const searchItems = async (query: string, lang: string = "es") => {
   const response = await api.get<ItemSearchResponse[]>(`/api/items/search?query=${query}&lang=${lang}`);
   return response.data;
@@ -180,7 +185,7 @@ export const calculateProfit = async (data: CalculateRequest) => {
   return response.data;
 };
 
-export const getMaintenanceStatus = async () => {
+export const getMaintenanceStatus = async (): Promise<MaintenanceResponse> => {
   const res = await api.get('/api/maintenance', {
     headers: {
       'Cache-Control': 'no-cache',
