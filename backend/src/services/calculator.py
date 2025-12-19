@@ -181,6 +181,106 @@ STAT_REGEX_PATTERNS = {
     ]
 }
 
+# --- NEW: ITEM TYPE REGEX PATTERNS ---
+ITEM_TYPE_REGEX_PATTERNS = {
+    "en": [
+        (r"^hat$", "Sombrero"),
+        (r"^amulet$", "Amuleto"),
+        (r"^ring$", "Anillo"),
+        (r"^belt$", "Cinturón"),
+        (r"^boots$", "Botas"),
+        (r"^shield$", "Escudo"),
+        (r"^cloak$", "Capa"),
+        (r"^backpack$", "Mochila"),
+        (r"^sword$", "Espada"),
+        (r"^bow$", "Arco"),
+        (r"^wand$", "Varita"),
+        (r"^staff$", "Bastón"),
+        (r"^dagger$", "Daga"),
+        (r"^hammer$", "Martillo"),
+        (r"^shovel$", "Pala"),
+        (r"^axe$", "Hacha"),
+        (r"^pickaxe$", "Pico"),
+        (r"^scythe$", "Guadaña"),
+        (r"^tool$", "Herramienta"),
+        (r"^dofus$", "Dofus"),
+        (r"^trophy$", "Trofeo"),
+        (r"^prysmarite$", "Prismaradita"),
+        (r"^pet$", "Mascota"),
+        (r"^petsmount$", "Mascotura"),
+        (r"^mount$", "Montura"),
+        (r"^living object$", "Objeto de apariencia"),
+        (r"^resource$", "Recurso"),
+        (r"^consumable$", "Consumible"),
+        (r"^idol$", "Ídolo"),
+        (r"^set$", "Set"),
+    ],
+    "fr": [
+        (r"^chapeau$", "Sombrero"),
+        (r"^amulette$", "Amuleto"),
+        (r"^anneau$", "Anillo"),
+        (r"^ceinture$", "Cinturón"),
+        (r"^bottes$", "Botas"),
+        (r"^bouclier$", "Escudo"),
+        (r"^cape$", "Capa"),
+        (r"^sac à dos$", "Mochila"),
+        (r"^épée$", "Espada"),
+        (r"^arc$", "Arco"),
+        (r"^baguette$", "Varita"),
+        (r"^bâton$", "Bastón"),
+        (r"^dague$", "Daga"),
+        (r"^marteau$", "Martillo"),
+        (r"^pelle$", "Pala"),
+        (r"^hache$", "Hacha"),
+        (r"^pioche$", "Pico"),
+        (r"^faux$", "Guadaña"),
+        (r"^outil$", "Herramienta"),
+        (r"^dofus$", "Dofus"),
+        (r"^trophée$", "Trofeo"),
+        (r"^prysmaradite$", "Prismaradita"),
+        (r"^familier$", "Mascota"),
+        (r"^montilier$", "Mascotura"),
+        (r"^monture$", "Montura"),
+        (r"^objet d'apparat$", "Objeto de apariencia"),
+        (r"^ressource$", "Recurso"),
+        (r"^consommable$", "Consumible"),
+        (r"^idole$", "Ídolo"),
+        (r"^panoplie$", "Set"),
+    ],
+    "es": [
+        (r"^sombrero$", "Sombrero"),
+        (r"^amuleto$", "Amuleto"),
+        (r"^anillo$", "Anillo"),
+        (r"^cinturón$", "Cinturón"),
+        (r"^botas$", "Botas"),
+        (r"^escudo$", "Escudo"),
+        (r"^capa$", "Capa"),
+        (r"^mochila$", "Mochila"),
+        (r"^espada$", "Espada"),
+        (r"^arco$", "Arco"),
+        (r"^varita$", "Varita"),
+        (r"^bastón$", "Bastón"),
+        (r"^daga$", "Daga"),
+        (r"^martillo$", "Martillo"),
+        (r"^pala$", "Pala"),
+        (r"^hacha$", "Hacha"),
+        (r"^pico$", "Pico"),
+        (r"^guadaña$", "Guadaña"),
+        (r"^herramienta$", "Herramienta"),
+        (r"^dofus$", "Dofus"),
+        (r"^trofeo$", "Trofeo"),
+        (r"^prismaradita$", "Prismaradita"),
+        (r"^mascota$", "Mascota"),
+        (r"^mascotura$", "Mascotura"),
+        (r"^montura$", "Montura"),
+        (r"^objeto de apariencia$", "Objeto de apariencia"),
+        (r"^recurso$", "Recurso"),
+        (r"^consumible$", "Consumible"),
+        (r"^ídolo$", "Ídolo"),
+        (r"^set$", "Set"),
+    ]
+}
+
 # --- 1. TU FUNCIÓN DE BÚSQUEDA (INTEGRADA) ---
 # Mantenemos tu lógica exacta para obtener la imagen.
 
@@ -381,6 +481,19 @@ def get_canonical_stat_name(stat_name: str, lang: str = "es") -> str:
         
     # 3. Fallback: Return as is (might fail lookup but better than crashing)
     return stat_name
+
+def get_canonical_item_type(item_type: str, lang: str = "es") -> str:
+    """
+    Converts a localized item type name to the canonical Spanish name.
+    """
+    item_type_lower = item_type.lower()
+    
+    if lang in ITEM_TYPE_REGEX_PATTERNS:
+        for pattern, canonical in ITEM_TYPE_REGEX_PATTERNS[lang]:
+            if re.search(pattern, item_type_lower, re.IGNORECASE):
+                return canonical
+    
+    return item_type # Fallback
 
 def get_rune_info(stat_name: str, lang: str = "es"):
     canonical_name = get_canonical_stat_name(stat_name, lang)

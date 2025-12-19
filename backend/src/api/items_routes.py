@@ -7,7 +7,7 @@ from src.models.schemas import ItemDetailsResponse, ItemSearchResponse, ItemCoef
 from src.models.sql_models import ItemCoefficientHistoryModel, PredictionDataset, IngredientPriceModel, RunePriceModel
 from src.services.equipment import get_item_details, search_equipment, get_ingredients_by_filter
 from src.services.profit import calculate_profitability
-from src.services.calculator import calculate_profit, get_canonical_stat_name
+from src.services.calculator import calculate_profit, get_canonical_stat_name, get_canonical_item_type
 from src.models.schemas import Ingredient, PaginatedProfitResponse, CalculateRequest
 from datetime import datetime
 
@@ -119,10 +119,10 @@ async def save_item_coefficient(
 
         # B. Get Prices
         ing_prices_res = await db.execute(select(IngredientPriceModel).where(IngredientPriceModel.server == server))
-        ing_prices = {row.IngredientPriceModel.item_id: row.IngredientPriceModel.price for row in ing_prices_res}
+        ing_prices = {p.item_id: p.price for p in ing_prices_res.scalars()}
         
         rune_prices_res = await db.execute(select(RunePriceModel).where(RunePriceModel.server == server))
-        rune_prices = {row.RunePriceModel.rune_name: row.RunePriceModel.price for row in rune_prices_res}
+        rune_prices = {r.rune_name: r.price for r in rune_prices_res.scalars()}
 
         # C. Calculate Craft Cost
         craft_cost = 0
@@ -176,6 +176,8 @@ async def save_item_coefficient(
         # G. Create Prediction Entry
         now_dt = datetime.now()
         
+        normalized_item_type = get_canonical_item_type(item.type or "Unknown", lang)
+        
         pred_entry = PredictionDataset(
             item_id=ankama_id,
             server=server, # CRÍTICO: Contexto macroeconómico
@@ -185,7 +187,7 @@ async def save_item_coefficient(
             ratio_profit=ratio_profit,
             profit_amount=profit_amount,    # Nuevo: Profit plano
             item_level=item.level,
-            item_type=item.type or "Unknown",
+            item_type=normalized_item_type,
             recipe_difficulty=len(item.recipe) if item.recipe else 0,
             
             # Nuevos Features
