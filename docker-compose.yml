@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:15-alpine
+    container_name: crushing_calculator_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -8,22 +9,32 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: ./backend
+    container_name: crushing_calculator_backend
     command: sh -c "python -m src.db.create_tables && python -m src.api.entrypoint"
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - ENVIRONMENT=${ENVIRONMENT}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: always
+    ports:
+      - "8000:8000"
 
   frontend:
     build:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: ""
+    container_name: crushing_calculator_frontend
     environment:
       - NEXT_PUBLIC_API_URL=
     depends_on:
@@ -32,10 +43,11 @@ services:
 
   nginx:
     image: nginx:alpine
+    container_name: crushing_calculator_nginx
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - "80:80"
+      - "${NGINX_PORT}:80"
     depends_on:
       - frontend
       - backend
