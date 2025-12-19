@@ -27,6 +27,16 @@ COPY . .
 # Install the project itself
 RUN poetry install --no-interaction --no-ansi
 
+# Create a non-root user for security
+RUN addgroup --system --gid 1001 python && \
+    adduser --system --uid 1001 --gid 1001 python
+
+# Change ownership of the app directory
+RUN chown -R python:python /app
+
+# Switch to non-root user
+USER python
+
 # Expose port
 EXPOSE 8000
 
