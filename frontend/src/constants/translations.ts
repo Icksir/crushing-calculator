@@ -20,7 +20,7 @@ export const translations: Record<Language, Record<string, string>> = {
     profit_description: 'Mejor escenario (Sin Focus o Con Focus) vs Costo.',
     max_rune_value: 'Valor Runas (Max):',
     craft_cost: 'Costo Craft:',
-    min_coefficient: 'Coeficiente Mínimo:',
+    min_coefficient: 'Coeficiente Mínimo',
     no_item_found: 'No se ha encontrado un objeto. Utiliza el buscador para empezar.',
     crushing_calculator_title: 'Calculadora de Rompimiento',
 
@@ -124,7 +124,7 @@ export const translations: Record<Language, Record<string, string>> = {
     profit_description: 'Best case (No Focus or With Focus) vs. Cost.',
     max_rune_value: 'Runes Value (Max):',
     craft_cost: 'Craft Cost:',
-    min_coefficient: 'Minimum Coefficient:',
+    min_coefficient: 'Minimum Coefficient',
     no_item_found: 'No item found. Use the search bar to begin.',
     crushing_calculator_title: 'Crushing Calculator',
 
@@ -228,7 +228,7 @@ export const translations: Record<Language, Record<string, string>> = {
     profit_description: 'Meilleur scénario (Sans Focus ou Avec Focus) vs. Coût.',
     max_rune_value: 'Valeur Runes (Max):',
     craft_cost: 'Coût de Craft:',
-    min_coefficient: 'Coefficient Minimum:',
+    min_coefficient: 'Coefficient Minimum',
     no_item_found: 'Aucun objet trouvé. Utilisez la recherche pour commencer.',
     crushing_calculator_title: 'Calculateur de Concassage',
 
