@@ -7,7 +7,89 @@ import re
 # List of (regex_pattern, canonical_name) tuples for each language
 # Ordered from most specific to least specific
 STAT_REGEX_PATTERNS = {
+    "es": [
+        # --- PORCENTAJES (Deben ir PRIMERO para evitar match con las fijas) ---
+        (r"%.*resistencia.*fuego", "% Resistencia Fuego"),
+        (r"%.*resistencia.*aire", "% Resistencia Aire"),
+        (r"%.*resistencia.*tierra", "% Resistencia Tierra"),
+        (r"%.*resistencia.*agua", "% Resistencia Agua"),
+        (r"%.*resistencia.*neutr", "% Resistencia Neutral"), # Neutro o Neutral
+        (r"%.*daños.*hechizos", "% Daños Hechizos"),
+        (r"%.*daños.*armas?", "% Daños Armas"),
+        (r"%.*daños.*distancia", "% Daños Distancia"),
+        (r"%.*daños.*cuerpo a cuerpo", "% Daños Cuerpo a Cuerpo"),
+        (r"%.*resistencia.*cuerpo a cuerpo", "% Resistencia Cuerpo a Cuerpo"),
+        (r"%.*resistencia.*distancia", "% Resistencia Distancia"),
+        (r"%.*crítico", "Crítico"), # % Critico es la stat normal de Critico
+        
+        # --- DAÑOS ELEMENTALES Y ESPECIALES (Cuidado con 'de daño') ---
+        (r"daños?.*neutr", "Daños Neutrales"),
+        (r"daños?.*tierra", "Daños Tierra"),
+        (r"daños?.*fuego", "Daños Fuego"),
+        (r"daños?.*agua", "Daños Agua"),
+        (r"daños?.*aire", "Daños Aire"),
+        (r"daños?.*críticos?", "Daños Críticos"),
+        (r"daños?.*trampas?", "Daños Trampas"),
+        (r"daños?.*empuje", "Empuje"),
+        (r"reenvío.*daños?", "Daños Reenvio"),
+        
+        # --- RESISTENCIAS FIJAS (Ya no harán match con los %) ---
+        (r"resistencia.*fuego", "Resistencia Fuego"),
+        (r"resistencia.*aire", "Resistencia Aire"),
+        (r"resistencia.*tierra", "Resistencia Tierra"),
+        (r"resistencia.*agua", "Resistencia Agua"),
+        (r"resistencia.*neutr", "Resistencia Neutral"),
+        (r"resistencia.*empuje", "Resistencia Empuje"),
+        (r"resistencia.*críticos?", "Resistencia Críticos"),
+        
+        # --- ESQUIVAS Y RETIROS ---
+        (r"retiro.*pa", "Retiro PA"),
+        (r"retiro.*pm", "Retiro PM"),
+        (r"esquiva.*pa", "Esquiva PA"),
+        (r"esquiva.*pm", "Esquiva PM"),
+        
+        # --- STATS SIMPLES ---
+        (r"^fuerza$", "Fuerza"),
+        (r"^inteligencia$", "Inteligencia"),
+        (r"^suerte$", "Suerte"),
+        (r"^agilidad$", "Agilidad"),
+        (r"^vitalidad$", "Vitalidad"),
+        (r"^sabiduría$", "Sabiduría"),
+        (r"^iniciativa$", "Iniciativa"),
+        (r"^pods$", "Pods"),
+        (r"^potencia$", "Potencia"),
+        (r"potencia.*trampas?", "Potencia Trampas"), # Potencia especifica antes de general
+        (r"^pa$", "PA"),
+        (r"^pm$", "PM"),
+        (r"^alcance$", "Alcance"),
+        (r"^invocaciones?$", "Invocaciones"), # Plural o singular
+        (r"^críticos?$", "Crítico"),
+        (r"^curas?$", "Curas"),
+        (r"^prospección$", "Prospección"),
+        (r"^placaje$", "Placaje"),
+        (r"^huida$", "Huida"),
+        (r"arma.*caza", "Arma de caza"),
+        
+        # --- FALLBACKS GENERALES (Al final) ---
+        (r"daños?", "Daños"), # Atrapa "Daños" genérico
+        (r"potencia", "Potencia"),
+    ],
+    
+    # Mantengo EN y FR como estaban, pero asegurando el orden de %
     "en": [
+        (r"% fire resistance", "% Resistencia Fuego"),
+        (r"% air resistance", "% Resistencia Aire"),
+        (r"% earth resistance", "% Resistencia Tierra"),
+        (r"% water resistance", "% Resistencia Agua"),
+        (r"% neutral resistance", "% Resistencia Neutral"),
+        (r"% spell damage", "% Daños Hechizos"),
+        (r"% weapon damage", "% Daños Armas"),
+        (r"% distance damage", "% Daños Distancia"),
+        (r"% melee damage", "% Daños Cuerpo a Cuerpo"),
+        (r"% melee resistance", "% Resistencia Cuerpo a Cuerpo"),
+        (r"% distance resistance", "% Resistencia Distancia"),
+        (r"% critical", "Crítico"),
+
         (r"^strength$", "Fuerza"),
         (r"^intelligence$", "Inteligencia"),
         (r"^chance$", "Suerte"),
@@ -22,9 +104,7 @@ STAT_REGEX_PATTERNS = {
         (r"^range$", "Alcance"),
         (r"^summons$", "Invocaciones"),
         (r"^critical hit$", "Crítico"),
-        (r"% critical", "Crítico"),
-        (r"^heals$", "Curas"),
-        (r"^heal$", "Curas"),
+        (r"^heals?$", "Curas"),
         (r"^prospecting$", "Prospección"),
         (r"^lock$", "Placaje"),
         (r"^dodge$", "Huida"),
@@ -35,7 +115,6 @@ STAT_REGEX_PATTERNS = {
         (r"air damage", "Daños Aire"),
         (r"critical damage", "Daños Críticos"),
         (r"trap damage", "Daños Trampas"),
-        (r"^damage$", "Daños"),
         (r"pushback damage", "Empuje"),
         (r"trap power", "Potencia Trampas"),
         (r"damage reflection", "Daños Reenvio"),
@@ -50,20 +129,24 @@ STAT_REGEX_PATTERNS = {
         (r"neutral resistance", "Resistencia Neutral"),
         (r"pushback resistance", "Resistencia Empuje"),
         (r"critical resistance", "Resistencia Críticos"),
-        (r"% fire resistance", "% Resistencia Fuego"),
-        (r"% air resistance", "% Resistencia Aire"),
-        (r"% earth resistance", "% Resistencia Tierra"),
-        (r"% water resistance", "% Resistencia Agua"),
-        (r"% neutral resistance", "% Resistencia Neutral"),
-        (r"% spell damage", "% Daños Hechizos"),
-        (r"% weapon damage", "% Daños Armas"),
-        (r"% distance damage", "% Daños Distancia"),
-        (r"% melee damage", "% Daños Cuerpo a Cuerpo"),
-        (r"% melee resistance", "% Resistencia Cuerpo a Cuerpo"),
-        (r"% distance resistance", "% Resistencia Distancia"),
         (r"hunting weapon", "Arma de caza"),
+        (r"^damage$", "Daños"), # Generic damage at the end
     ],
+    
     "fr": [
+        (r"% résistance feu", "% Resistencia Fuego"),
+        (r"% résistance air", "% Resistencia Aire"),
+        (r"% résistance terre", "% Resistencia Tierra"),
+        (r"% résistance eau", "% Resistencia Agua"),
+        (r"% résistance neutre", "% Resistencia Neutral"),
+        (r"% dommages aux sorts", "% Daños Hechizos"),
+        (r"% dommages d'armes", "% Daños Armas"),
+        (r"% dommages à distance", "% Daños Distancia"),
+        (r"% dommages en mêlée", "% Daños Cuerpo a Cuerpo"),
+        (r"% résistance mêlée", "% Resistencia Cuerpo a Cuerpo"),
+        (r"% résistance à distance", "% Resistencia Distancia"),
+        (r"% critique", "Crítico"),
+
         (r"^force$", "Fuerza"),
         (r"^intelligence$", "Inteligencia"),
         (r"^chance$", "Suerte"),
@@ -77,21 +160,18 @@ STAT_REGEX_PATTERNS = {
         (r"^pm$", "PM"),
         (r"^portée$", "Alcance"),
         (r"^invocation$", "Invocaciones"),
-        (r"% critique", "Crítico"),
         (r"^soin$", "Curas"),
         (r"^prospection$", "Prospección"),
         (r"^tacle$", "Placaje"),
         (r"^fuite$", "Huida"),
-        (r"dommage neutre", "Daños Neutrales"),
-        (r"dommage terre", "Daños Tierra"),
-        (r"dommage feu", "Daños Fuego"),
-        (r"dommage eau", "Daños Agua"),
-        (r"dommages air", "Daños Aire"),
-        (r"dommage air", "Daños Aire"),
-        (r"dommage critiques", "Daños Críticos"),
-        (r"dommage aux pièges", "Daños Trampas"),
-        (r"^dommage$", "Daños"),
-        (r"dommage poussée", "Empuje"),
+        (r"dommages? neutre", "Daños Neutrales"),
+        (r"dommages? terre", "Daños Tierra"),
+        (r"dommages? feu", "Daños Fuego"),
+        (r"dommages? eau", "Daños Agua"),
+        (r"dommages? air", "Daños Aire"),
+        (r"dommages? critiques", "Daños Críticos"),
+        (r"dommages? aux pièges", "Daños Trampas"),
+        (r"dommages? poussée", "Empuje"),
         (r"puissance des pièges", "Potencia Trampas"),
         (r"renvoi de dommages", "Daños Reenvio"),
         (r"retrait pa", "Retiro PA"),
@@ -105,79 +185,8 @@ STAT_REGEX_PATTERNS = {
         (r"résistance neutre", "Resistencia Neutral"),
         (r"résistance poussée", "Resistencia Empuje"),
         (r"résistance critiques", "Resistencia Críticos"),
-        (r"% résistance feu", "% Resistencia Fuego"),
-        (r"% résistance air", "% Resistencia Aire"),
-        (r"% résistance terre", "% Resistencia Tierra"),
-        (r"% résistance eau", "% Resistencia Agua"),
-        (r"% résistance neutre", "% Resistencia Neutral"),
-        (r"% dommages aux sorts", "% Daños Hechizos"),
-        (r"% dommages d'armes", "% Daños Armas"),
-        (r"% dommages à distance", "% Daños Distancia"),
-        (r"% dommages en mêlée", "% Daños Cuerpo a Cuerpo"),
-        (r"% résistance mêlée", "% Resistencia Cuerpo a Cuerpo"),
-        (r"% résistance à distance", "% Resistencia Distancia"),
         (r"arme de chasse", "Arma de caza"),
-    ],
-    "es": [
-        (r"^fuerza$", "Fuerza"),
-        (r"^inteligencia$", "Inteligencia"),
-        (r"^suerte$", "Suerte"),
-        (r"^agilidad$", "Agilidad"),
-        (r"^vitalidad$", "Vitalidad"),
-        (r"^sabiduría$", "Sabiduría"),
-        (r"^iniciativa$", "Iniciativa"),
-        (r"^pods$", "Pods"),
-        (r"^potencia$", "Potencia"),
-        (r"^pa$", "PA"),
-        (r"^pm$", "PM"),
-        (r"^alcance$", "Alcance"),
-        (r"^invocaciones$", "Invocaciones"),
-        (r"^crítico$", "Crítico"),
-        (r"%.*crítico", "Crítico"),
-        (r"^curas?$", "Curas"),
-        (r"^prospección$", "Prospección"),
-        (r"^placaje$", "Placaje"),
-        (r"^huida$", "Huida"),
-        (r"daños? neutr.*", "Daños Neutrales"),
-        (r"daños? tierra", "Daños Tierra"),
-        (r"daños? fuego", "Daños Fuego"),
-        (r"daños? agua", "Daños Agua"),
-        (r"daños? aire", "Daños Aire"),
-        (r"daños? críticos", "Daños Críticos"),
-        (r"daños? trampas", "Daños Trampas"),
-        (r"^daños?$", "Daños"),
-        (r"daños? de empuje", "Empuje"),
-        (r"potencia.*trampas", "Potencia Trampas"),
-        (r"reenvío de daños", "Daños Reenvio"),
-        (r"retiro pa", "Retiro PA"),
-        (r"retiro.*pa", "Retiro PA"),
-        (r"retiro pm", "Retiro PM"),
-        (r"retiro.*pm", "Retiro PM"),
-        (r"esquiva.*pa", "Esquiva PA"),
-        (r"esquiva.*pm", "Esquiva PM"),
-        (r"resistencia.*fuego", "Resistencia Fuego"),
-        (r"resistencia.*aire", "Resistencia Aire"),
-        (r"resistencia.*tierra", "Resistencia Tierra"),
-        (r"resistencia.*agua", "Resistencia Agua"),
-        (r"resistencia.*neutro", "Resistencia Neutral"),
-        (r"resistencia.*neutral", "Resistencia Neutral"),
-        (r"resistencia.*empuje", "Resistencia Empuje"),
-        (r"resistencia.*críticos", "Resistencia Críticos"),
-        (r"%.*resistencia.*fuego", "% Resistencia Fuego"),
-        (r"%.*resistencia.*aire", "% Resistencia Aire"),
-        (r"%.*resistencia.*tierra", "% Resistencia Tierra"),
-        (r"%.*resistencia.*agua", "% Resistencia Agua"),
-        (r"%.*resistencia.*neutral", "% Resistencia Neutral"),
-        (r"%.*daños.*hechizos", "% Daños Hechizos"),
-        (r"%.*daños.*arma", "% Daños Armas"),
-        (r"%.*daños.*distancia", "% Daños Distancia"),
-        (r"%.*daños.*cuerpo a cuerpo", "% Daños Cuerpo a Cuerpo"),
-        (r"%.*resistencia.*cuerpo a cuerpo", "% Resistencia Cuerpo a Cuerpo"),
-        (r"%.*resistencia.*distancia", "% Resistencia Distancia"),
-        (r"arma de caza", "Arma de caza"),
-        (r"de daño", "Daños"),
-        (r"de cura", "Curas"),
-        (r"potencia.*", "Potencia"),
+        (r"^dommages?$", "Daños"), # Generic damage at the end
     ]
 }
 
@@ -555,7 +564,8 @@ async def calculate_profit(request: CalculateRequest) -> CalculateResponse:
     
     stat_vrs = {}      # Diccionario para guardar el VR de cada stat individual
     total_vr_sum = 0.0 # Suma total de todos los VR del objeto
-
+    
+    print(f"--- DEBUG PESOS (Coeficiente: {server_coef}) ---")
     for stat in request.stats:
         density = get_stat_density(stat.name, lang)
         value = stat.value
@@ -569,13 +579,18 @@ async def calculate_profit(request: CalculateRequest) -> CalculateResponse:
 
         # Solo calculamos VR si la stat aporta algo positivo
         if value > 0:
-            # Fórmula: ((value * density * item_lvl * 0.0150) + 1)
+            # Fórmula estándar para positivos
             vr = ((value * density * item_lvl * 0.0150) + 1)
         else:
-            vr = 0
+            vr = 1
+
+        print(f"Stat: {stat.name} | Valor: {value} | VR Calculado: {vr}")
             
         stat_vrs[stat.name] = vr
         total_vr_sum += vr
+
+    print(f"TOTAL VR SUM: {total_vr_sum}")
+    print("------------------------------------------------")
 
     # 3. FASE 2: CÁLCULO DE RUNAS
     max_focus_profit = -float('inf')
