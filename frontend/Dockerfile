@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci # Este era install
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -22,13 +22,8 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 # Disable Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Clean any existing cache to ensure fresh build
-RUN rm -rf .next .turbo node_modules/.cache .npm
-RUN npm cache clean --force
-
-# Next.js collects completely anonymous telemetry data about general usage.
-
-RUN npm run build
+# Clean any existing cache to ensure fresh build and run build
+RUN rm -rf .next .turbo node_modules/.cache .npm && npm cache clean --force && npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
