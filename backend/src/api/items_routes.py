@@ -111,32 +111,20 @@ async def save_item_coefficient(
     
     # 2. Gather Data for PredictionDataset
     try:
-        # A. Get Item Details
+        # B. Get Item Details
         item = await get_item_details(ankama_id, lang)
         if not item:
             await db.commit()
             return {"status": "success", "warning": "Item details not found for prediction"}
 
-        # B. Get Prices
-        ing_prices_res = await db.execute(select(IngredientPriceModel).where(IngredientPriceModel.server == server))
-        ing_prices = {p.item_id: p.price for p in ing_prices_res.scalars()}
+        # C. Calculate Craft Cost & Profit from request
+        craft_cost = request.craft_cost
+        rune_value_real = request.rune_value
+        profit_amount = request.profit
         
-        rune_prices_res = await db.execute(select(RunePriceModel).where(RunePriceModel.server == server))
-        rune_prices = {r.rune_name: r.price for r in rune_prices_res.scalars()}
-
-        # C. Calculate Craft Cost
-        craft_cost = 0
-        if item.recipe:
-            for ing in item.recipe:
-                price = ing_prices.get(ing.id, 0)
-                if price > 0:
-                    craft_cost += price * ing.quantity
-        
-        # D. Calculate Rune Value at Real Coefficient
-        rune_value_real = 0
-        profit_amount = 0
+        # D. Determine high value runes and dominant rune type
         has_high_value_rune = False
-        dominant_rune_type = "Generic"
+        dominant_rune_type = "Generic" # Default value
         
         if item.stats:
             # 1. Detect High Value Runes (Flag only)
@@ -145,8 +133,12 @@ async def save_item_coefficient(
                 if stat.value > 0 and canonical in {"PA", "PM", "Alcance", "Crítico"}:
                     has_high_value_rune = True
 
-            # 2. Use Calculator Service to determine dominant rune and value
-            # We use the REAL coefficient entered by the user
+            # 2. To determine dominant_rune_type, we need to call calculate_profit
+            # This is a bit redundant but necessary if we want to keep this feature
+            # We can optimize later by sending it from the frontend if needed.
+            rune_prices_res = await db.execute(select(RunePriceModel).where(RunePriceModel.server == server))
+            rune_prices = {r.rune_name: r.price for r in rune_prices_res.scalars()}
+
             calc_req = CalculateRequest(
                 item_level=item.level,
                 stats=item.stats,
@@ -159,16 +151,11 @@ async def save_item_coefficient(
             
             calc_res = await calculate_profit(calc_req)
             
-            # total_estimated_value is the Revenue of the best strategy (Normal or Focus)
-            rune_value_real = calc_res.total_estimated_value
-            profit_amount = calc_res.net_profit
-            
-            # Determine dominant rune type based on which strategy yielded more profit
-            # If net_profit matches max_focus_profit, it means Focus was selected
             if calc_res.net_profit == calc_res.max_focus_profit and calc_res.best_focus_stat:
                 dominant_rune_type = get_canonical_stat_name(calc_res.best_focus_stat, lang)
             else:
                 dominant_rune_type = "Mixed"
+
 
         # E. Calculate Features
         ratio_profit = (rune_value_real / craft_cost) if craft_cost > 0 else 0

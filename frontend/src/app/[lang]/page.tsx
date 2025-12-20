@@ -230,7 +230,15 @@ const Calculator = () => {
     
     setIsSaving(true);
     try {
-      await saveItemCoefficient(selectedItem.id, coeff, language, server);
+      await saveItemCoefficient(
+        selectedItem.id, 
+        coeff, 
+        cost,
+        liveMetrics.totalValue,
+        liveMetrics.profit,
+        language, 
+        server
+      );
       setLastCoeffDate(new Date().toISOString());
     } catch (e) {
       console.error("Failed to save coefficient", e);

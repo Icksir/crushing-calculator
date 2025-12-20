@@ -68,6 +68,9 @@ class ProfitItem(BaseModel):
 
 class ItemCoefficientRequest(BaseModel):
     coefficient: float
+    craft_cost: int
+    rune_value: int
+    profit: int
 
 class CalculateResponse(BaseModel):
     total_estimated_value: float

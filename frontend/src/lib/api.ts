@@ -40,8 +40,21 @@ export const updateIngredientPrices = async (updates: { item_id: number; price: 
   await api.post('/api/prices/ingredients', updates, { params: { server } });
 };
 
-export const saveItemCoefficient = async (itemId: number, coefficient: number, lang: string = "es", server: string = "Dakal") => {
-  await api.post(`/api/items/${itemId}/coefficient`, { coefficient }, { params: { lang, server } });
+export const saveItemCoefficient = async (
+  itemId: number, 
+  coefficient: number, 
+  craft_cost: number,
+  rune_value: number,
+  profit: number,
+  lang: string = "es", 
+  server: string = "Dakal"
+) => {
+  await api.post(`/api/items/${itemId}/coefficient`, { 
+    coefficient,
+    craft_cost,
+    rune_value,
+    profit
+  }, { params: { lang, server } });
 };
 
 export const getIngredientsByFilter = async (types: string[], minLevel: number, maxLevel: number, lang: string = "es") => {
