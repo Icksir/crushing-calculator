@@ -2,193 +2,7 @@ import httpx
 import asyncio
 from src.models.schemas import CalculateRequest, CalculateResponse, RuneBreakdown
 import re
-
-# --- NEW: STAT NAME REGEX PATTERNS ---
-# List of (regex_pattern, canonical_name) tuples for each language
-# Ordered from most specific to least specific
-STAT_REGEX_PATTERNS = {
-    "es": [
-        # --- PORCENTAJES (Deben ir PRIMERO para evitar match con las fijas) ---
-        (r"%.*resistencia.*fuego", "% Resistencia Fuego"),
-        (r"%.*resistencia.*aire", "% Resistencia Aire"),
-        (r"%.*resistencia.*tierra", "% Resistencia Tierra"),
-        (r"%.*resistencia.*agua", "% Resistencia Agua"),
-        (r"%.*resistencia.*neutr", "% Resistencia Neutral"), # Neutro o Neutral
-        (r"%.*daños.*hechizos", "% Daños Hechizos"),
-        (r"%.*daños.*armas?", "% Daños Armas"),
-        (r"%.*daños.*distancia", "% Daños Distancia"),
-        (r"%.*daños.*cuerpo a cuerpo", "% Daños Cuerpo a Cuerpo"),
-        (r"%.*resistencia.*cuerpo a cuerpo", "% Resistencia Cuerpo a Cuerpo"),
-        (r"%.*resistencia.*distancia", "% Resistencia Distancia"),
-        (r"%.*crítico", "Crítico"), # % Critico es la stat normal de Critico
-        
-        # --- DAÑOS ELEMENTALES Y ESPECIALES (Cuidado con 'de daño') ---
-        (r"daños?.*neutr", "Daños Neutrales"),
-        (r"daños?.*tierra", "Daños Tierra"),
-        (r"daños?.*fuego", "Daños Fuego"),
-        (r"daños?.*agua", "Daños Agua"),
-        (r"daños?.*aire", "Daños Aire"),
-        (r"daños?.*críticos?", "Daños Críticos"),
-        (r"daños?.*trampas?", "Daños Trampas"),
-        (r"daños?.*empuje", "Empuje"),
-        (r"reenvío.*daños?", "Daños Reenvio"),
-        
-        # --- RESISTENCIAS FIJAS (Ya no harán match con los %) ---
-        (r"resistencia.*fuego", "Resistencia Fuego"),
-        (r"resistencia.*aire", "Resistencia Aire"),
-        (r"resistencia.*tierra", "Resistencia Tierra"),
-        (r"resistencia.*agua", "Resistencia Agua"),
-        (r"resistencia.*neutr", "Resistencia Neutral"),
-        (r"resistencia.*empuje", "Resistencia Empuje"),
-        (r"resistencia.*críticos?", "Resistencia Críticos"),
-        
-        # --- ESQUIVAS Y RETIROS ---
-        (r"retiro.*pa", "Retiro PA"),
-        (r"retiro.*pm", "Retiro PM"),
-        (r"esquiva.*pa", "Esquiva PA"),
-        (r"esquiva.*pm", "Esquiva PM"),
-        
-        # --- STATS SIMPLES ---
-        (r"^fuerza$", "Fuerza"),
-        (r"^inteligencia$", "Inteligencia"),
-        (r"^suerte$", "Suerte"),
-        (r"^agilidad$", "Agilidad"),
-        (r"^vitalidad$", "Vitalidad"),
-        (r"^sabiduría$", "Sabiduría"),
-        (r"^iniciativa$", "Iniciativa"),
-        (r"^pods$", "Pods"),
-        (r"^potencia$", "Potencia"),
-        (r"potencia.*trampas?", "Potencia Trampas"), # Potencia especifica antes de general
-        (r"^pa$", "PA"),
-        (r"^pm$", "PM"),
-        (r"^alcance$", "Alcance"),
-        (r"^invocaciones?$", "Invocaciones"), # Plural o singular
-        (r"^críticos?$", "Crítico"),
-        (r"^curas?$", "Curas"),
-        (r"^prospección$", "Prospección"),
-        (r"^placaje$", "Placaje"),
-        (r"^huida$", "Huida"),
-        (r"arma.*caza", "Arma de caza"),
-        
-        # --- FALLBACKS GENERALES (Al final) ---
-        (r"daños?", "Daños"), # Atrapa "Daños" genérico
-        (r"potencia", "Potencia"),
-    ],
-    
-    # Mantengo EN y FR como estaban, pero asegurando el orden de %
-    "en": [
-        (r"% fire resistance", "% Resistencia Fuego"),
-        (r"% air resistance", "% Resistencia Aire"),
-        (r"% earth resistance", "% Resistencia Tierra"),
-        (r"% water resistance", "% Resistencia Agua"),
-        (r"% neutral resistance", "% Resistencia Neutral"),
-        (r"% spell damage", "% Daños Hechizos"),
-        (r"% weapon damage", "% Daños Armas"),
-        (r"% distance damage", "% Daños Distancia"),
-        (r"% melee damage", "% Daños Cuerpo a Cuerpo"),
-        (r"% melee resistance", "% Resistencia Cuerpo a Cuerpo"),
-        (r"% distance resistance", "% Resistencia Distancia"),
-        (r"% critical", "Crítico"),
-
-        (r"^strength$", "Fuerza"),
-        (r"^intelligence$", "Inteligencia"),
-        (r"^chance$", "Suerte"),
-        (r"^agility$", "Agilidad"),
-        (r"^vitality$", "Vitalidad"),
-        (r"^wisdom$", "Sabiduría"),
-        (r"^initiative$", "Iniciativa"),
-        (r"^pods$", "Pods"),
-        (r"^power$", "Potencia"),
-        (r"^ap$", "PA"),
-        (r"^mp$", "PM"),
-        (r"^range$", "Alcance"),
-        (r"^summons$", "Invocaciones"),
-        (r"^critical hit$", "Crítico"),
-        (r"^heals?$", "Curas"),
-        (r"^prospecting$", "Prospección"),
-        (r"^lock$", "Placaje"),
-        (r"^dodge$", "Huida"),
-        (r"neutral damage", "Daños Neutrales"),
-        (r"earth damage", "Daños Tierra"),
-        (r"fire damage", "Daños Fuego"),
-        (r"water damage", "Daños Agua"),
-        (r"air damage", "Daños Aire"),
-        (r"critical damage", "Daños Críticos"),
-        (r"trap damage", "Daños Trampas"),
-        (r"pushback damage", "Empuje"),
-        (r"trap power", "Potencia Trampas"),
-        (r"damage reflection", "Daños Reenvio"),
-        (r"ap reduction", "Retiro PA"),
-        (r"mp reduction", "Retiro PM"),
-        (r"ap loss resistance", "Esquiva PA"),
-        (r"mp loss resistance", "Esquiva PM"),
-        (r"fire resistance", "Resistencia Fuego"),
-        (r"air resistance", "Resistencia Aire"),
-        (r"earth resistance", "Resistencia Tierra"),
-        (r"water resistance", "Resistencia Agua"),
-        (r"neutral resistance", "Resistencia Neutral"),
-        (r"pushback resistance", "Resistencia Empuje"),
-        (r"critical resistance", "Resistencia Críticos"),
-        (r"hunting weapon", "Arma de caza"),
-        (r"^damage$", "Daños"), # Generic damage at the end
-    ],
-    
-    "fr": [
-        (r"% résistance feu", "% Resistencia Fuego"),
-        (r"% résistance air", "% Resistencia Aire"),
-        (r"% résistance terre", "% Resistencia Tierra"),
-        (r"% résistance eau", "% Resistencia Agua"),
-        (r"% résistance neutre", "% Resistencia Neutral"),
-        (r"% dommages aux sorts", "% Daños Hechizos"),
-        (r"% dommages d'armes", "% Daños Armas"),
-        (r"% dommages à distance", "% Daños Distancia"),
-        (r"% dommages en mêlée", "% Daños Cuerpo a Cuerpo"),
-        (r"% résistance mêlée", "% Resistencia Cuerpo a Cuerpo"),
-        (r"% résistance à distance", "% Resistencia Distancia"),
-        (r"% critique", "Crítico"),
-
-        (r"^force$", "Fuerza"),
-        (r"^intelligence$", "Inteligencia"),
-        (r"^chance$", "Suerte"),
-        (r"^agilité$", "Agilidad"),
-        (r"^vitalité$", "Vitalidad"),
-        (r"^sagesse$", "Sabiduría"),
-        (r"^initiative$", "Iniciativa"),
-        (r"^pods$", "Pods"),
-        (r"^puissance$", "Potencia"),
-        (r"^pa$", "PA"),
-        (r"^pm$", "PM"),
-        (r"^portée$", "Alcance"),
-        (r"^invocation$", "Invocaciones"),
-        (r"^soin$", "Curas"),
-        (r"^prospection$", "Prospección"),
-        (r"^tacle$", "Placaje"),
-        (r"^fuite$", "Huida"),
-        (r"dommages? neutre", "Daños Neutrales"),
-        (r"dommages? terre", "Daños Tierra"),
-        (r"dommages? feu", "Daños Fuego"),
-        (r"dommages? eau", "Daños Agua"),
-        (r"dommages? air", "Daños Aire"),
-        (r"dommages? critiques", "Daños Críticos"),
-        (r"dommages? aux pièges", "Daños Trampas"),
-        (r"dommages? poussée", "Empuje"),
-        (r"puissance des pièges", "Potencia Trampas"),
-        (r"renvoi de dommages", "Daños Reenvio"),
-        (r"retrait pa", "Retiro PA"),
-        (r"retrait pm", "Retiro PM"),
-        (r"esquive pa", "Esquiva PA"),
-        (r"esquive pm", "Esquiva PM"),
-        (r"résistance feu", "Resistencia Fuego"),
-        (r"résistance air", "Resistencia Aire"),
-        (r"résistance terre", "Resistencia Tierra"),
-        (r"résistance eau", "Resistencia Agua"),
-        (r"résistance neutre", "Resistencia Neutral"),
-        (r"résistance poussée", "Resistencia Empuje"),
-        (r"résistance critiques", "Resistencia Críticos"),
-        (r"arme de chasse", "Arma de caza"),
-        (r"^dommages?$", "Daños"), # Generic damage at the end
-    ]
-}
+from services.rune_regex import STAT_REGEX_PATTERNS
 
 # --- NEW: ITEM TYPE REGEX PATTERNS ---
 ITEM_TYPE_REGEX_PATTERNS = {
@@ -471,25 +285,35 @@ RUNE_DB = {
 # --- 4. HELPERS ---
 
 def get_canonical_stat_name(stat_name: str, lang: str = "es") -> str:
-    """
-    Converts a localized stat name (e.g., 'Force' in FR) to the canonical key used in RUNE_DB (e.g., 'Fuerza').
-    Uses regex patterns to match stat names flexibly.
-    """
-    stat_lower = stat_name.lower()
+    # DEBUG 1: Ver qué llega realmente
+    print(f"\n[DEBUG DETECTOR] ------------------------------------------------")
+    print(f"[DEBUG DETECTOR] Raw Input:  '{stat_name}'")
     
-    # 1. Try regex matching in the specific language patterns
+    if not stat_name:
+        return ""
+
+    # Limpieza
+    clean_name = re.sub(r"^[+\-\d\s]+", "", stat_name).strip()
+    print(f"[DEBUG DETECTOR] Clean Input: '{clean_name}'")
+
+    # Match Regex
     if lang in STAT_REGEX_PATTERNS:
         for pattern, canonical in STAT_REGEX_PATTERNS[lang]:
-            if re.search(pattern, stat_lower, re.IGNORECASE):
+            # Nota: Imprimimos el patrón para ver cuál "salta" primero
+            if re.search(pattern, clean_name):
+                print(f"[DEBUG DETECTOR] ✅ MATCH! Pattern: '{pattern}'")
+                print(f"[DEBUG DETECTOR] ➡️ Resultado: '{canonical}'")
                 return canonical
             
-    # 2. Fallback: Check if it's already a canonical key (Spanish keys in RUNE_DB)
-    # This handles cases where the input is already "Fuerza" or "PA"
-    if stat_name in RUNE_DB:
-        return stat_name
-        
-    # 3. Fallback: Return as is (might fail lookup but better than crashing)
-    return stat_name
+    # Fallbacks
+    if "RUNE_DB" in globals(): 
+        for db_key in RUNE_DB.keys():
+            if db_key.lower() == clean_name.lower():
+                print(f"[DEBUG DETECTOR] ⚠️ Fallback DB Exacto: '{db_key}'")
+                return db_key
+    
+    print(f"[DEBUG DETECTOR] ❌ NO MATCH. Se devuelve: '{clean_name}'")
+    return clean_name
 
 def get_canonical_item_type(item_type: str, lang: str = "es") -> str:
     """
