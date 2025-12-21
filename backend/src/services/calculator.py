@@ -2,7 +2,7 @@ import httpx
 import asyncio
 from src.models.schemas import CalculateRequest, CalculateResponse, RuneBreakdown
 import re
-from services.rune_regex import STAT_REGEX_PATTERNS
+from services.rune_regex import STAT_MAPS
 
 # --- NEW: ITEM TYPE REGEX PATTERNS ---
 ITEM_TYPE_REGEX_PATTERNS = {
@@ -285,34 +285,63 @@ RUNE_DB = {
 # --- 4. HELPERS ---
 
 def get_canonical_stat_name(stat_name: str, lang: str = "es") -> str:
-    # DEBUG 1: Ver qué llega realmente
-    print(f"\n[DEBUG DETECTOR] ------------------------------------------------")
-    print(f"[DEBUG DETECTOR] Raw Input:  '{stat_name}'")
+    """
+    Busca el nombre canónico de un stat usando diccionarios (HashMaps).
+    Prioridad: Match Exacto > Match Limpio (sin números) > Fallback.
+    """
+    # DEBUG: Ver qué llega
+    print(f"\n[DEBUG MAP] ------------------------------------------------")
+    print(f"[DEBUG MAP] Raw Input:  '{stat_name}'")
     
     if not stat_name:
         return ""
 
-    # Limpieza
-    clean_name = re.sub(r"^[+\-\d\s]+", "", stat_name).strip()
-    print(f"[DEBUG DETECTOR] Clean Input: '{clean_name}'")
+    # Seleccionar el diccionario del idioma correcto
+    # Si no existe el idioma, usa un diccionario vacío para evitar errores
+    current_map = STAT_MAPS.get(lang, {}) 
+    
+    # -----------------------------------------------------------
+    # INTENTO 1: Búsqueda Exacta (Solo strip básico)
+    # -----------------------------------------------------------
+    # Esto atrapa llaves "sucias" que definimos explícitamente como:
+    # ": + Damage", ": - AP", "AP", etc. si vienen solas.
+    raw_key = stat_name.strip()
+    
+    if raw_key in current_map:
+        canonical = current_map[raw_key]
+        print(f"[DEBUG MAP] ✅ DIRECT MATCH! Key: '{raw_key}'")
+        print(f"[DEBUG MAP] ➡️ Resultado: '{canonical}'")
+        return canonical
 
-    # Match Regex
-    if lang in STAT_REGEX_PATTERNS:
-        for pattern, canonical in STAT_REGEX_PATTERNS[lang]:
-            # Nota: Imprimimos el patrón para ver cuál "salta" primero
-            if re.search(pattern, clean_name):
-                print(f"[DEBUG DETECTOR] ✅ MATCH! Pattern: '{pattern}'")
-                print(f"[DEBUG DETECTOR] ➡️ Resultado: '{canonical}'")
-                return canonical
-            
-    # Fallbacks
+    # -----------------------------------------------------------
+    # INTENTO 2: Búsqueda Limpia (Remover números y símbolos iniciales)
+    # -----------------------------------------------------------
+    # Esto transforma "+50 Strength" -> "Strength"
+    # O "15 % Fire Resistance" -> "% Fire Resistance"
+    clean_name = re.sub(r"^[+\-\d\s:]+", "", stat_name).strip()
+    
+    # NOTA: Agregué ':' al regex de limpieza para que ": + Damage" 
+    # se convierta en "Damage" si la búsqueda exacta falló (por ejemplo si dice "1 : + Damage")
+    
+    print(f"[DEBUG MAP] Clean Input: '{clean_name}'")
+
+    if clean_name in current_map:
+        canonical = current_map[clean_name]
+        print(f"[DEBUG MAP] ✅ CLEAN MATCH! Key: '{clean_name}'")
+        print(f"[DEBUG MAP] ➡️ Resultado: '{canonical}'")
+        return canonical
+
+    # -----------------------------------------------------------
+    # FALLBACKS (Si no está en el mapa)
+    # -----------------------------------------------------------
     if "RUNE_DB" in globals(): 
+        # Intento de matchear contra la base de datos de runas directamente
         for db_key in RUNE_DB.keys():
             if db_key.lower() == clean_name.lower():
-                print(f"[DEBUG DETECTOR] ⚠️ Fallback DB Exacto: '{db_key}'")
+                print(f"[DEBUG MAP] ⚠️ Fallback DB Exacto: '{db_key}'")
                 return db_key
     
-    print(f"[DEBUG DETECTOR] ❌ NO MATCH. Se devuelve: '{clean_name}'")
+    print(f"[DEBUG MAP] ❌ NO MATCH en Mapas ni DB. Se devuelve: '{clean_name}'")
     return clean_name
 
 def get_canonical_item_type(item_type: str, lang: str = "es") -> str:

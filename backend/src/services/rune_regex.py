@@ -1,333 +1,254 @@
-STAT_REGEX_PATTERNS = {
-    "es": [
-        # ==========================================
-        # 1. PORCENTAJES (Prioridad Máxima)
-        # ==========================================
-        # Matches: "% resistencia al fuego", "% resistencia a la tierra", etc.
-        (r"(?i)%\s*resis.*\b(?:a\s*l[aeos]*\s*)?(fuego|feu)", "% Resistencia Fuego"),
-        (r"(?i)%\s*resis.*\b(?:a\s*l[aeos]*\s*)?(aire|air)", "% Resistencia Aire"),
-        (r"(?i)%\s*resis.*\b(?:a\s*l[aeos]*\s*)?(tierra|terre)", "% Resistencia Tierra"),
-        (r"(?i)%\s*resis.*\b(?:a\s*l[aeos]*\s*)?(agua|eau)", "% Resistencia Agua"),
-        (r"(?i)%\s*resis.*\b(?:a\s*l[aeos]*\s*)?(neutr)", "% Resistencia Neutral"),
+STAT_MAPS = {
+    "es": {
+        # --- Porcentajes ---
+        '% crítico': 'Crítico',
+        '% daños CaC': '% Daños Cuerpo a Cuerpo',
+        '% daños distancia': '% Daños Distancia',
+        '% daños a los hechizos': '% Daños Hechizos',
+        '% daños de hechizos': '% Daños Hechizos',
+        '% daños de armas': '% Daños Armas',
         
-        # Matches: "% daños...", "% daños CaC", etc.
-        (r"(?i)%\s*daños?\s*de\s*hechizos?", "% Daños Hechizos"), # "% daños de hechizos"
-        (r"(?i)%\s*daños?\s*a\s*los\s*hechizos?", "% Daños Hechizos"), # "% daños a los hechizos"
-        (r"(?i)%\s*daños?\s*(?:de\s*)?armas?", "% Daños Armas"),
-        (r"(?i)%\s*daños?\s*distancia", "% Daños Distancia"),
-        (r"(?i)%\s*daños?\s*(?:cuerpo|cac)", "% Daños Cuerpo a Cuerpo"), # "% daños CaC"
-        
-        (r"(?i)%\s*resis.*\b(?:cuerpo|cac)", "% Resistencia Cuerpo a Cuerpo"),
-        (r"(?i)%\s*resis.*\bdistancia", "% Resistencia Distancia"),
-        
-        # Matches: ": +% de crítico", "% crítico"
-        (r"(?i)(?::\s*\+)?%?\s*(?:de\s+)?cr[íi]tico", "Crítico"), 
+        '% resistencia CaC': '% Resistencia Cuerpo a Cuerpo',
+        '% resistencia distancia': '% Resistencia Distancia',
+        '% resistencia a la tierra': '% Resistencia Tierra',
+        '% resistencia al agua': '% Resistencia Agua',
+        '% resistencia al aire': '% Resistencia Aire',
+        '% resistencia al fuego': '% Resistencia Fuego',
+        '% resistencia neutral': '% Resistencia Neutral',
 
-        # ==========================================
-        # 2. DAÑOS ESPECIFICOS (Fijos)
-        # ==========================================
-        # Matches: "de daño de fuego", "de daño neutro", ": + de daños básicos"
-        # Usamos (?:de\s+|:\s*\+\s*de\s+)? para comerse los prefijos
-        
-        (r"(?i)(?:de\s+|:\s*\+\s*de\s+)?daños?\s*(?:de\s+|tipo\s*)?neutr", "Daños Neutrales"),
-        (r"(?i)(?:de\s+|:\s*\+\s*de\s+)?daños?\s*(?:de\s+|tipo\s*)?tierra", "Daños Tierra"),
-        (r"(?i)(?:de\s+|:\s*\+\s*de\s+)?daños?\s*(?:de\s+|tipo\s*)?fuego", "Daños Fuego"),
-        (r"(?i)(?:de\s+|:\s*\+\s*de\s+)?daños?\s*(?:de\s+|tipo\s*)?agua", "Daños Agua"),
-        (r"(?i)(?:de\s+|:\s*\+\s*de\s+)?daños?\s*(?:de\s+|tipo\s*)?aire", "Daños Aire"),
-        
-        # Especiales
-        (r"(?i)(?:de\s+)?daños?\s*cr[íi]ticos?", "Daños Críticos"), # "de daño crítico"
-        (r"(?i)(?:de\s+)?daños?\s*(?:de\s*)?trampas?", "Daños Trampas"), # "de daño de trampas"
-        
-        # Empuje: "de daño de empuje"
-        (r"(?i)(?:de\s+)?daños?\s*(?:de\s*)?empuje", "Empuje"), 
-        
-        # Reenvío: "de daños devueltos"
-        (r"(?i)(?:de\s+)?daños?\s*(?:devueltos|reenv)", "Daños Reenvio"),
+        # --- Daños Fijos ---
+        'de daño': 'Daños',
+        'de daño crítico': 'Daños Críticos',
+        'de daño neutro': 'Daños Neutrales',
+        'de daño de tierra': 'Daños Tierra',
+        'de daño de fuego': 'Daños Fuego',
+        'de daño de agua': 'Daños Agua',
+        'de daño de aire': 'Daños Aire',
+        'de daño de empuje': 'Empuje',
+        'de daño de trampas': 'Daños Trampas',
+        'de daños devueltos': 'Daños Reenvio',
 
-        # ==========================================
-        # 3. RESISTENCIAS FIJAS
-        # ==========================================
-        # Matches: "de resistencia al fuego", "de resistencia a la tierra"
-        
-        (r"(?i)(?:de\s+)?resis.*\b(?:a\s*l[aeos]*\s*)?(fuego|feu)", "Resistencia Fuego"),
-        (r"(?i)(?:de\s+)?resis.*\b(?:a\s*l[aeos]*\s*)?(aire|air)", "Resistencia Aire"),
-        (r"(?i)(?:de\s+)?resis.*\b(?:a\s*l[aeos]*\s*)?(tierra|terre)", "Resistencia Tierra"),
-        (r"(?i)(?:de\s+)?resis.*\b(?:a\s*l[aeos]*\s*)?(agua|eau)", "Resistencia Agua"),
-        (r"(?i)(?:de\s+)?resis.*\b(?:a\s*l[aeos]*\s*)?(neutr)", "Resistencia Neutral"),
-        
-        (r"(?i)(?:de\s+)?resis.*\b(?:a\s*l[aeos]*\s*)?(empuje|pouss)", "Resistencia Empuje"),
-        (r"(?i)(?:de\s+)?resis.*\b(?:a\s*l[aeos]*\s*)?cr[íi]ticos?", "Resistencia Críticos"),
+        # --- Resistencias Fijas ---
+        'de resistencia a críticos': 'Resistencia Críticos',
+        'de resistencia a los críticos': 'Resistencia Críticos', # Variante común
+        'de resistencia a la tierra': 'Resistencia Tierra',
+        'de resistencia al agua': 'Resistencia Agua',
+        'de resistencia al aire': 'Resistencia Aire',
+        'de resistencia al fuego': 'Resistencia Fuego',
+        'de resistencia al neutro': 'Resistencia Neutral',
+        'de resistencia al empuje': 'Resistencia Empuje',
 
-        # ==========================================
-        # 4. ESQUIVAS Y RETIROS (Técnicos)
-        # ==========================================
-        # Matches: "al retiro de PA", "supresión PA", "supresión PM"
-        (r"(?i)(?:al\s+)?(?:retiro|supresi[óo]n)\s*(?:de\s+)?pa", "Retiro PA"),
-        (r"(?i)(?:al\s+)?(?:retiro|supresi[óo]n)\s*(?:de\s+)?pm", "Retiro PM"),
+        # --- Stats Base ---
+        'vitalidad': 'Vitalidad',
+        'fuerza': 'Fuerza',
+        'inteligencia': 'Inteligencia',
+        'suerte': 'Suerte',
+        'agilidad': 'Agilidad',
+        'sabiduría': 'Sabiduría',
         
-        # Matches: "esquiva de PA", "a la esquiva pérdidas de PA"
-        (r"(?i)(?:a\s*la\s+)?esquiva\s*(?:de\s+|pérdidas\s+de\s+)?pa", "Esquiva PA"),
-        (r"(?i)(?:a\s*la\s+)?esquiva\s*(?:de\s+|pérdidas\s+de\s+)?pm", "Esquiva PM"),
+        'iniciativa': 'Iniciativa',
+        'prospección': 'Prospección',
+        'pod': 'Pods',
         
-        # ==========================================
-        # 5. CASOS ESPECIALES
-        # ==========================================
-        # "potencia (daños generales) con trampas" -> Potencia Trampas
-        (r"(?i)potencia.*trampas", "Potencia Trampas"),
-        (r"(?i)arma\s*(?:de\s*)?caza", "Arma de caza"),
+        # --- Potencia ---
+        'potencia (daños generales)': 'Potencia',
+        'potencia (daños generales) con trampas': 'Potencia Trampas',
+
+        # --- PA / PM / Alcance ---
+        'PA': 'PA',
+        'PM': 'PM',
+        'alcance': 'Alcance',
         
-        # ==========================================
-        # 6. STATS BASE
-        # ==========================================
-        # Matches: "potencia (daños generales)", "potencia"
-        (r"(?i)^potencia", "Potencia"), 
+        # --- Retiros y Esquivas ---
+        'al retiro de PA': 'Retiro PA',
+        'supresión PA': 'Retiro PA',
+        'al retiro de PM': 'Retiro PM',
+        'supresión PM': 'Retiro PM',
         
-        (r"(?i)^fuerza$", "Fuerza"),
-        (r"(?i)^inteligencia$", "Inteligencia"),
-        (r"(?i)^suerte$", "Suerte"),
-        (r"(?i)^agilidad$", "Agilidad"),
-        (r"(?i)^vitalidad$", "Vitalidad"),
-        (r"(?i)^sabidur[íi]a$", "Sabiduría"),
-        (r"(?i)^iniciativa$", "Iniciativa"),
-        
-        # Matches: "pod" (en la lista viene en singular) o "pods"
-        (r"(?i)^pods?$", "Pods"),
-        
-        (r"(?i)^invocaci", "Invocaciones"),
-        
-        # Matches: "de cura"
-        (r"(?i)(?:de\s+)?curas?$", "Curas"),
-        
-        (r"(?i)^prospecci[óo]n$", "Prospección"),
-        (r"(?i)^placaje$", "Placaje"),
-        (r"(?i)^huida$", "Huida"),
-        
-        # ==========================================
-        # 7. ABREVIATURAS
-        # ==========================================
-        # Matches: "PA", ": - PA"
-        (r"(?i)(?::\s*-\s*)?^pa$", "PA"),
-        (r"(?i)^pm$", "PM"),
-        
-        # Matches: ": + de alcance máximo", "alcance"
-        (r"(?i)(?::\s*\+\s*de\s+)?(?:alcance|po).*", "Alcance"),
-        
-        # ==========================================
-        # 8. FALLBACK (Lo último)
-        # ==========================================
-        # Matches: "de daño", ": + de daños", "daños"
-        (r"(?i)(?:de\s+|:\s*\+\s*de\s+)?daños?$", "Daños"),
-    ],
+        'esquiva de PA': 'Esquiva PA',
+        'a la esquiva pérdidas de PA': 'Esquiva PA',
+        'esquiva PM': 'Esquiva PM',
+        'a la esquiva pérdidas de PM': 'Esquiva PM',
+
+        # --- Otros ---
+        'invocaciones': 'Invocaciones',
+        'de cura': 'Curas',
+        'placaje': 'Placaje',
+        'huida': 'Huida',
+        'Arma de caza': 'Arma de caza', # Único stat especial que se suele conservar
+        },
     
     # IMPORTANTE: Los idiomas EN y FR también deben devolver 
     # las llaves en ESPAÑOL para que coincidan con tu STAT_DENSITIES.
-    "en": [
+    "en": {
         # ==========================================
-        # 1. PORCENTAJES (Prioridad Máxima)
+        # 1. PORCENTAJES
         # ==========================================
-        # Matches: "% Fire Resistance", "% Critical", ": +% Critical"
-        (r"(?i)%\s*fire\s*res", "% Resistencia Fuego"),
-        (r"(?i)%\s*air\s*res", "% Resistencia Aire"),
-        (r"(?i)%\s*earth\s*res", "% Resistencia Tierra"),
-        (r"(?i)%\s*water\s*res", "% Resistencia Agua"),
-        (r"(?i)%\s*neutral\s*res", "% Resistencia Neutral"),
+        "% Fire Resistance": "% Resistencia Fuego",
+        "% Air Resistance": "% Resistencia Aire",
+        "% Earth Resistance": "% Resistencia Tierra",
+        "% Water Resistance": "% Resistencia Agua",
+        "% Neutral Resistance": "% Resistencia Neutral",
         
-        # Damages %
-        (r"(?i)%\s*spell\s*dam", "% Daños Hechizos"),
-        (r"(?i)%\s*weapon\s*dam", "% Daños Armas"),
-        (r"(?i)%\s*ranged?\s*dam", "% Daños Distancia"),
-        (r"(?i)%\s*melee\s*dam", "% Daños Cuerpo a Cuerpo"),
+        "% Spell Damage": "% Daños Hechizos",
+        "% Weapon Damage": "% Daños Armas",
+        "% Ranged Damage": "% Daños Distancia",
+        "% Melee Damage": "% Daños Cuerpo a Cuerpo",
         
-        # Resis % Special
-        (r"(?i)%\s*melee\s*res", "% Resistencia Cuerpo a Cuerpo"),
-        (r"(?i)%\s*ranged?\s*res", "% Resistencia Distancia"),
+        "% Ranged Resistance": "% Resistencia Distancia",
+        "% Melee Resistance": "% Resistencia Cuerpo a Cuerpo",
         
-        # Critical % (Handle ": +% Critical" and "% Critical")
-        (r"(?i)(?::\s*\+\s*)?%\s*crit", "Crítico"),
+        "% Critical": "Crítico",
+        ": +% Critical": "Crítico",
 
         # ==========================================
-        # 2. DAÑOS ESPECIFICOS (Fijos)
+        # 2. DAÑOS ESPECÍFICOS
         # ==========================================
-        # Matches: "Fire Damage", ": + base damage" (generic fallback later)
-        (r"(?i)neutral\s*dam", "Daños Neutrales"),
-        (r"(?i)earth\s*dam", "Daños Tierra"),
-        (r"(?i)fire\s*dam", "Daños Fuego"),
-        (r"(?i)water\s*dam", "Daños Agua"),
-        (r"(?i)air\s*dam", "Daños Aire"),
+        "Neutral Damage": "Daños Neutrales",
+        "Earth Damage": "Daños Tierra",
+        "Fire Damage": "Daños Fuego",
+        "Water Damage": "Daños Agua",
+        "Air damage": "Daños Aire", # Nota: la lista original tenía 'd' minúscula
         
-        # Special Damages
-        (r"(?i)crit.*\bdam", "Daños Críticos"), # Critical Damage
-        (r"(?i)trap\s*dam", "Daños Trampas"),   # Trap Damage
-        (r"(?i)pushback\s*dam", "Empuje"),      # Pushback Damage
-        (r"(?i)reflected\s*dam", "Daños Reenvio"), # reflected damage
-        
+        "Critical Damage": "Daños Críticos",
+        "Trap Damage": "Daños Trampas",
+        "Pushback Damage": "Empuje",
+        "reflected damage": "Daños Reenvio",
+
         # ==========================================
         # 3. RESISTENCIAS FIJAS
         # ==========================================
-        # Anchored ^ to avoid matching % variants if prefix is clean
-        (r"(?i)^fire\s*res", "Resistencia Fuego"),
-        (r"(?i)^air\s*res", "Resistencia Aire"),
-        (r"(?i)^earth\s*res", "Resistencia Tierra"),
-        (r"(?i)^water\s*res", "Resistencia Agua"),
-        (r"(?i)^neutral\s*res", "Resistencia Neutral"),
+        "Fire Resistance": "Resistencia Fuego",
+        "Air Resistance": "Resistencia Aire",
+        "Earth Resistance": "Resistencia Tierra",
+        "Water Resistance": "Resistencia Agua",
+        "Neutral Resistance": "Resistencia Neutral",
         
-        (r"(?i)pushback\s*res", "Resistencia Empuje"),
-        (r"(?i)crit.*\bres", "Resistencia Críticos"),
+        "Pushback Resistance": "Resistencia Empuje",
+        "Critical Resistance": "Resistencia Críticos",
 
         # ==========================================
-        # 4. AP/MP SPECIALS (Reduction/Parry)
+        # 4. ESQUIVAS Y RETIROS
         # ==========================================
-        # API uses "Reduction" and "Parry"
-        (r"(?i)ap\s*red", "Retiro PA"),      # AP Reduction
-        (r"(?i)mp\s*red", "Retiro PM"),      # MP Reduction
-        (r"(?i)ap\s*parry", "Esquiva PA"),   # AP Parry
-        (r"(?i)mp\s*parry", "Esquiva PM"),   # MP Parry
-        
-        # ==========================================
-        # 5. SPECIAL CASES
-        # ==========================================
-        # "Power (traps)" must come before generic "Power"
-        (r"(?i)power\s*\(traps\)", "Potencia Trampas"), 
-        (r"(?i)hunting\s*weapon", "Arma de caza"),
+        "AP Reduction": "Retiro PA",
+        "MP Reduction": "Retiro PM",
+        "AP Parry": "Esquiva PA",
+        "MP Parry": "Esquiva PM",
 
         # ==========================================
-        # 6. STATS BASE
+        # 5. STATS BASE
         # ==========================================
-        (r"(?i)^strength$", "Fuerza"),
-        (r"(?i)^intelligence$", "Inteligencia"),
-        (r"(?i)^chance$", "Suerte"),
-        (r"(?i)^agility$", "Agilidad"),
-        (r"(?i)^vitality$", "Vitalidad"),
-        (r"(?i)^wisdom$", "Sabiduría"),
-        (r"(?i)^initiative$", "Iniciativa"),
-        (r"(?i)^pods?$", "Pods"), # Pod or Pods
-        (r"(?i)^power$", "Potencia"),
-        (r"(?i)^summons?$", "Invocaciones"),
-        (r"(?i)^heal$", "Curas"), # API says "Heal" (singular)
-        (r"(?i)^prospecting$", "Prospección"),
-        (r"(?i)^lock$", "Placaje"),
-        (r"(?i)^dodge$", "Huida"),
+        "Strength": "Fuerza",
+        "Intelligence": "Inteligencia",
+        "Chance": "Suerte",
+        "Agility": "Agilidad",
+        "Vitality": "Vitalidad",
+        "Wisdom": "Sabiduría",
+        "Initiative": "Iniciativa",
+        "Pod": "Pods",
+        "Summons": "Invocaciones",
+        "Heal": "Curas",
+        "Prospecting": "Prospección",
+        "Lock": "Placaje",
+        "Dodge": "Huida",
         
-        # ==========================================
-        # 7. ABREVIATURAS & PREFIXED STATS
-        # ==========================================
-        # Matches: "AP", ": - AP"
-        (r"(?i)(?::\s*-\s*)?^ap$", "PA"),
-        (r"(?i)(?::\s*-\s*)?^mp$", "PM"),
-        
-        # Matches: "Range", ": + Maximum Range", ": modifiable Range"
-        (r"(?i)(?::\s*(?:\+|modifiable)\s*(?:maximum\s*)?)?range", "Alcance"),
-        
-        # ==========================================
-        # 8. FALLBACK
-        # ==========================================
-        # Matches: "Damage", ": + Damage", ": + base damage"
-        (r"(?i)(?::\s*\+\s*(?:base\s+)?)?^damage$", "Daños"),
-    ],
-
-    "fr": [
-        # ==========================================
-        # 1. POURCENTAGES (Priorité)
-        # ==========================================
-        # Matches: "% Résistance Feu", ": +% Critique"
-        (r"(?i)%\s*résis.*\bfeu", "% Resistencia Fuego"),
-        (r"(?i)%\s*résis.*\bair", "% Resistencia Aire"),
-        (r"(?i)%\s*résis.*\bterre", "% Resistencia Tierra"),
-        (r"(?i)%\s*résis.*\beau", "% Resistencia Agua"),
-        (r"(?i)%\s*résis.*\bneutre", "% Resistencia Neutral"),
-        
-        # Dommages %
-        (r"(?i)%\s*dom.*\bsorts?", "% Daños Hechizos"),
-        (r"(?i)%\s*dom.*\barmes?", "% Daños Armas"),
-        (r"(?i)%\s*dom.*\bdistance", "% Daños Distancia"),
-        (r"(?i)%\s*dom.*\bmêlée", "% Daños Cuerpo a Cuerpo"),
-        
-        # Résistance Spéciale %
-        (r"(?i)%\s*résis.*\bmêlée", "% Resistencia Cuerpo a Cuerpo"),
-        (r"(?i)%\s*résis.*\bdistance", "% Resistencia Distancia"),
-        
-        # Critique % (Gère ": +% Critique" et "% Critique")
-        (r"(?i)(?::\s*\+\s*)?%?\s*critique", "Crítico"),
+        # Potencia
+        "Power": "Potencia",
+        "Power (traps)": "Potencia Trampas",
 
         # ==========================================
-        # 2. DOMMAGES SPÉCIFIQUES (Fixes)
+        # 6. ABREVIATURAS Y VARIANTES
         # ==========================================
-        # Matches: "Dommage Feu", ": + dégâts de base"
-        (r"(?i)dom.*\bneutre", "Daños Neutrales"),
-        (r"(?i)dom.*\bterre", "Daños Tierra"),
-        (r"(?i)dom.*\bfeu", "Daños Fuego"),
-        (r"(?i)dom.*\beau", "Daños Agua"),
-        (r"(?i)dom.*\bair", "Daños Aire"),
+        "AP": "PA",
+        ": - AP": "PA", # Malus, pero la runa es PA
+        "MP": "PM",
         
-        # Spéciaux
-        (r"(?i)dom.*\bcritiques?", "Daños Críticos"),
-        (r"(?i)dom.*\bpièges?", "Daños Trampas"),
-        (r"(?i)dom.*\bpoussée", "Empuje"),
+        # Alcance (Variantes de la lista)
+        "Range": "Alcance",
+        ": + Maximum Range": "Alcance",
+        ": modifiable Range": "Alcance",
         
-        # Renvoi: "Dommages Renvoyés"
-        (r"(?i)(?:renvoi|dommages\s+renvoyés)", "Daños Reenvio"),
+        # Daños Genéricos (Variantes de la lista)
+        "Damage": "Daños",
+        ": + Damage": "Daños",
+        ": + base damage": "Daños",
+        
+        # Especiales
+        "Hunting weapon": "Arma de caza"
+        },
 
-        # ==========================================
-        # 3. RÉSISTANCES FIXES
-        # ==========================================
-        # Ancrage ^ pour éviter les %
-        (r"(?i)^résis.*\bfeu", "Resistencia Fuego"),
-        (r"(?i)^résis.*\bair", "Resistencia Aire"),
-        (r"(?i)^résis.*\bterre", "Resistencia Tierra"),
-        (r"(?i)^résis.*\beau", "Resistencia Agua"),
-        (r"(?i)^résis.*\bneutre", "Resistencia Neutral"),
-        
-        (r"(?i)résis.*\bpoussée", "Resistencia Empuje"),
-        (r"(?i)résis.*\bcritiques?", "Resistencia Críticos"),
+    "fr": {
+        # --- Porcentajes ---
+        '% Critique': 'Crítico',
+        '% Dommages mêlée': '% Daños Cuerpo a Cuerpo',
+        '% Dommages distance': '% Daños Distancia',
+        '% Dommages aux sorts': '% Daños Hechizos',
+        '% Dommages d\'armes': '% Daños Armas', # Nota el escape de la comilla simple
 
-        # ==========================================
-        # 4. TECHNIQUE (Retrait/Esquive)
-        # ==========================================
-        (r"(?i)retrait\s*pa", "Retiro PA"),
-        (r"(?i)retrait\s*pm", "Retiro PM"),
-        (r"(?i)esquive\s*pa", "Esquiva PA"),
-        (r"(?i)esquive\s*pm", "Esquiva PM"),
-        
-        # ==========================================
-        # 5. CAS SPÉCIAUX
-        # ==========================================
-        # "Puissance Pièges" avant "Puissance"
-        (r"(?i)pui.*\bpièges?", "Potencia Trampas"),
-        (r"(?i)arme\s*(?:de\s*)?chasse", "Arma de caza"), # "Arme de chasse"
+        '% Résistance mêlée': '% Resistencia Cuerpo a Cuerpo',
+        '% Résistance distance': '% Resistencia Distancia',
+        '% Résistance Terre': '% Resistencia Tierra',
+        '% Résistance Eau': '% Resistencia Agua',
+        '% Résistance Air': '% Resistencia Aire',
+        '% Résistance Feu': '% Resistencia Fuego',
+        '% Résistance Neutre': '% Resistencia Neutral',
 
-        # ==========================================
-        # 6. STATS DE BASE
-        # ==========================================
-        (r"(?i)^force$", "Fuerza"),
-        (r"(?i)^intelligence$", "Inteligencia"),
-        (r"(?i)^chance$", "Suerte"),
-        (r"(?i)^agilité$", "Agilidad"),
-        (r"(?i)^vitalité$", "Vitalidad"),
-        (r"(?i)^sagesse$", "Sabiduría"),
-        (r"(?i)^initiative$", "Iniciativa"),
-        (r"(?i)^pods?$", "Pods"), # "Pod"
-        (r"(?i)^puissance", "Potencia"),
-        (r"(?i)^invo", "Invocaciones"),
-        (r"(?i)^soins?$", "Curas"), # "Soin"
-        (r"(?i)^prospection$", "Prospección"),
-        (r"(?i)^tacle$", "Placaje"),
-        (r"(?i)^fuite$", "Huida"),
+        # --- Daños Fijos (Dommage) ---
+        # Nota: Dofus FR es inconsistente (singular "Dommage" vs plural "Dommages")
+        # Copiamos exactamente como viene en tu lista.
+        'Dommage': 'Daños',
+        'Dommage Critiques': 'Daños Críticos',
+        'Dommage Neutre': 'Daños Neutrales',
+        'Dommage Terre': 'Daños Tierra',
+        'Dommage Feu': 'Daños Fuego',
+        'Dommage Eau': 'Daños Agua',
+        'Dommage Air': 'Daños Aire',
+        'Dommage Poussée': 'Empuje',
+        'Dommage Pièges': 'Daños Trampas',
+        'Dommages Renvoyés': 'Daños Reenvio',
+
+        # --- Resistencias Fijas ---
+        'Résistance Critiques': 'Resistencia Críticos',
+        'Résistance Terre': 'Resistencia Tierra',
+        'Résistance Eau': 'Resistencia Agua',
+        'Résistance Air': 'Resistencia Aire',
+        'Résistance Feu': 'Resistencia Fuego',
+        'Résistance Neutre': 'Resistencia Neutral',
+        'Résistance Poussée': 'Resistencia Empuje',
+
+        # --- Stats Base ---
+        'Vitalité': 'Vitalidad',
+        'Force': 'Fuerza',
+        'Intelligence': 'Inteligencia',
+        'Chance': 'Suerte',
+        'Agilité': 'Agilidad',
+        'Sagesse': 'Sabiduría',
         
-        # ==========================================
-        # 7. ABRÉVIATIONS & PRÉFIXES
-        # ==========================================
-        # Matches: "PA", ": - PA"
-        (r"(?i)(?::\s*-\s*)?^pa$", "PA"),
-        (r"(?i)^pm$", "PM"),
+        'Initiative': 'Iniciativa',
+        'Prospection': 'Prospección',
+        'Pod': 'Pods',
         
-        # Matches: "Portée", ": + Portée maximale", ": Portée modifiable"
-        (r"(?i)(?::\s*(?:\+|modifiable)\s*(?:maximale\s*)?)?portée", "Alcance"),
+        # --- Potencia ---
+        'Puissance': 'Potencia',
+        'Puissance Pièges': 'Potencia Trampas',
+
+        # --- PA / PM / Alcance ---
+        'PA': 'PA',
+        'PM': 'PM',
+        'Portée': 'Alcance',
         
-        # ==========================================
-        # 8. FALLBACK
-        # ==========================================
-        # Matches: "Dommage", ": + Dommages", ": + dégâts de base"
-        (r"(?i)(?::\s*\+\s*(?:dégâts\s+de\s+base)?)?^dommages?$", "Daños"),
-    ]
+        # --- Retiros y Esquivas ---
+        'Retrait PA': 'Retiro PA',
+        'Retrait PM': 'Retiro PM',
+        
+        'Esquive PA': 'Esquiva PA',
+        'Esquive PM': 'Esquiva PM',
+
+        # --- Otros ---
+        'Invocation': 'Invocaciones',
+        'Soin': 'Curas',
+        'Tacle': 'Placaje',
+        'Fuite': 'Huida',
+        'Arme de chasse': 'Arma de caza',
+    }
 }
