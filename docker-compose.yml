@@ -14,46 +14,49 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   backend:
     build: ./backend
     container_name: crushing_calculator_backend
     command: sh -c "python -m src.db.create_tables && python -m src.api.entrypoint"
     environment:
+      # Accede a la DB por la red interna 'default'
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - ENVIRONMENT=${ENVIRONMENT}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - NGINX_PORT=${NGINX_HOST_PORT}
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./backend/config:/app/config
     restart: always
-    ports:
-      - "8000:8000"
+    networks:
+      - default      # Para hablar con la DB
+      - web_network  # Para que el Nginx Global lo vea
 
   frontend:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: ""
+        # En el frontend, la API URL pública es la del dominio (vía Nginx)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: crushing_calculator_frontend
     environment:
-      - NEXT_PUBLIC_API_URL=
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     depends_on:
       - backend
     restart: always
+    networks:
+      - web_network # Para que el Nginx Global lo vea
 
-  nginx:
-    image: nginx:alpine
-    container_name: crushing_calculator_nginx
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - "${NGINX_PORT}:80"
-    depends_on:
-      - frontend
-      - backend
-    restart: always
+networks:
+  web_network:
+    external: true
+  default:
+    driver: bridge
 
 volumes:
   postgres_data:
