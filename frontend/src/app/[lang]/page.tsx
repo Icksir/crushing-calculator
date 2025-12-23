@@ -348,12 +348,14 @@ const Calculator = () => {
 
       <main className="flex-1 container mx-auto max-w-[1600px] p-4 md:p-8 space-y-8">
         <div className="flex justify-between items-center border-b pb-4 gap-4">
-          <div className="flex gap-2 overflow-x-auto flex-shrink-0">
-            <Button variant={activeTab === 'calculator' ? 'default' : 'ghost'} onClick={() => setActiveTab('calculator')}>{t('calculator')}</Button>
-            <Button variant={activeTab === 'runes' ? 'default' : 'ghost'} onClick={() => setActiveTab('runes')}>{t('rune_prices')}</Button>
-            <Button variant={activeTab === 'resources' ? 'default' : 'ghost'} onClick={() => setActiveTab('resources')}>{t('resource_prices')}</Button>
+          <div className="flex-1 min-w-0">
+            <div className="flex gap-2 overflow-x-auto">
+              <Button variant={activeTab === 'calculator' ? 'default' : 'ghost'} onClick={() => setActiveTab('calculator')} className="h-10 flex-shrink-0">{t('calculator')}</Button>
+              <Button variant={activeTab === 'runes' ? 'default' : 'ghost'} onClick={() => setActiveTab('runes')} className="h-10 flex-shrink-0">{t('rune_prices')}</Button>
+              <Button variant={activeTab === 'resources' ? 'default' : 'ghost'} onClick={() => setActiveTab('resources')} className="h-10 flex-shrink-0">{t('resource_prices')}</Button>
+            </div>
           </div>
-          <div ref={runesContainerRef} className="hidden md:flex items-center justify-end gap-3 flex-1">
+          <div ref={runesContainerRef} className="hidden md:flex items-center justify-end gap-3">
             {Object.entries(runePrices)
               .filter(([name, rune]) => {
                 const n = name.toLowerCase();
