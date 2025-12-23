@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     debug: bool = True
+    NGINX_PORT: int = 80
     
     # Logging
     log_level: str = "INFO"
@@ -21,10 +22,12 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://usuario:password@localhost:5432/nombre_db"
     
     # CORS
-    cors_origins: list = [
-                            "http://localhost:3000",
-                            "http://127.0.0.1:3000",
-                        ]
+    cors_origins: str = "http://localhost:8080,https://kamaskope.icksir.com" 
+    
+    @property
+    def cors_origins_list(self) -> list[str]:
+        origins = [origin.strip() for origin in self.cors_origins.split(',')]
+        return origins
 
     class Config:
         env_file = ".env"

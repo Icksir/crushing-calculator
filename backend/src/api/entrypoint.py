@@ -20,7 +20,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=env_settings.cors_origins,
+        allow_origins=env_settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -48,6 +48,8 @@ app = create_app()
 for route in app.routes:
     if hasattr(route, "path"):
         print(f"Route: {route.path}")
+
+print(f"CORS Origins configured: {env_settings.cors_origins_list}")
 
 def main():
     if env_settings.environment == "development":
