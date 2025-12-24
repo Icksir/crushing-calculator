@@ -9,7 +9,7 @@ from src.services.equipment import get_item_details, search_equipment, get_ingre
 from src.services.profit import calculate_profitability
 from src.services.calculator import calculate_profit, get_canonical_stat_name, get_canonical_item_type
 from src.models.schemas import Ingredient, PaginatedProfitResponse, CalculateRequest
-from datetime import datetime
+from datetime import datetime, timedelta
 
 router = APIRouter(tags=['items'])
 
@@ -68,6 +68,28 @@ async def get_item_details_endpoint(ankama_id: int, lang: str = "es", server: st
         item = ItemDetailsResponse(**item_dict)
         
     return item
+
+@router.get("/items/{item_id}/history")
+async def get_item_coefficient_history(
+    item_id: int, 
+    server: str = "Dakal", 
+    db: AsyncSession = Depends(get_db)
+):
+    one_week_ago = datetime.utcnow() - timedelta(days=7)
+    
+    query = select(ItemCoefficientHistoryModel).where(
+        ItemCoefficientHistoryModel.item_id == item_id,
+        ItemCoefficientHistoryModel.server == server,
+        ItemCoefficientHistoryModel.created_at >= one_week_ago
+    ).order_by(ItemCoefficientHistoryModel.created_at.asc())
+    
+    result = await db.execute(query)
+    history = result.scalars().all()
+    
+    return [
+        {"date": entry.created_at.isoformat(), "coefficient": entry.coefficient}
+        for entry in history
+    ]
 
 @router.post("/items/{ankama_id}/coefficient")
 async def save_item_coefficient(
