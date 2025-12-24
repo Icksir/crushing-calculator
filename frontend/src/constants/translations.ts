@@ -112,6 +112,7 @@ export const translations: Record<Language, Record<string, string>> = {
     logo_alt_text: "Kamaskope Logo",
     footer_made_with: 'Hecho con',
     footer_by: 'por',
+    footer_ankama_images: 'Las imágenes pertenecen a Ankama.',
   },
   en: {
     // General
@@ -224,6 +225,7 @@ export const translations: Record<Language, Record<string, string>> = {
     logo_alt_text: "Kamaskope Logo",
     footer_made_with: 'Made with',
     footer_by: 'by',
+    footer_ankama_images: 'Images belong to Ankama.',
   },
   fr: {
     // General
@@ -336,5 +338,6 @@ export const translations: Record<Language, Record<string, string>> = {
     logo_alt_text: "Logo Kamaskope",
     footer_made_with: 'Fait avec',
     footer_by: 'par',
+    footer_ankama_images: 'Les images appartiennent à Ankama.',
   },
 };
