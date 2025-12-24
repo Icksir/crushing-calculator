@@ -10,6 +10,8 @@ export const translations: Record<Language, Record<string, string>> = {
     search_object: 'Buscar objeto (ej: Nidas)...',
     no_results: 'No se encontraron resultados.',
     loading: 'Cargando...',
+    server: 'servidor',
+    language: 'idioma',
 
     // Calculator Page
     page_description: 'Ajusta las estadísticas y el precio para calcular el beneficio de rompimiento.',
@@ -114,6 +116,8 @@ export const translations: Record<Language, Record<string, string>> = {
     search_object: 'Search item (e.g., Nidas)...',
     no_results: 'No results found.',
     loading: 'Loading...',
+    server: 'server',
+    language: 'language',
 
     // Calculator Page
     page_description: 'Adjust the stats and price to calculate the crushing profit.',
@@ -218,6 +222,8 @@ export const translations: Record<Language, Record<string, string>> = {
     search_object: 'Chercher un objet (ex: Nidas)...',
     no_results: 'Aucun résultat trouvé.',
     loading: 'Chargement...',
+    server: 'serveur',
+    language: 'langue',
 
     // Calculator Page
     page_description: 'Ajustez les statistiques et le prix pour calculer le bénéfice de concassage.',
