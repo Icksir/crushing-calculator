@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { ItemStat, RuneBreakdown } from '@/lib/api';
@@ -20,6 +20,16 @@ interface RuneTableProps {
 export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatChange, showTop3 = false }) => {
   const { runePrices, updatePrice } = useRunePrices();
   const { t } = useLanguage();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // CAMBIO 1: Aceptamos string temporalmente para permitir escribir el guion "-"
   const handleStatValueChange = (index: number, newValue: number | string) => {
@@ -70,6 +80,102 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
       return Math.floor(count * price);
     })
   ])).sort((a, b) => b - a).filter(v => v > 0);
+
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        {rows.map(({ stat, index, result }) => {
+            const count = result?.count || 0;
+            const runeName = result?.rune_name || stat.rune_name || '';
+            const price = runePrices[runeName]?.price || 0;
+            const total = Math.floor(count * price);
+
+            const focusCount = result?.focus_count || 0;
+            const focusTotal = Math.floor(focusCount * price);
+
+            let styleClass = 'text-purple-700 dark:text-purple-400';
+            if (focusTotal > 0) {
+              if (showTop3) {
+                  if (focusTotal === sortedValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-lg font-black';
+                  else if (focusTotal === sortedValues[1]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-lg font-bold';
+                  else if (focusTotal === sortedValues[2]) styleClass = 'text-orange-600 dark:text-orange-400 text-lg font-bold';
+              } else {
+                  if (focusTotal === globalMax) styleClass = 'text-green-600 dark:text-green-400 text-lg';
+              }
+            }
+
+            return (
+              <div key={index} className={`rounded-lg border bg-card shadow-sm p-4 ${stat.value < 0 ? 'bg-red-100/50 dark:bg-red-900/20' : ''}`}>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-8 h-8 flex items-center justify-center bg-muted/50 rounded-md border border-border/50">
+                      {result?.rune_image ? <Image src={result.rune_image} alt="" width={24} height={24} className="object-contain" /> : <div className="w-4 h-4 bg-muted-foreground/20 rounded-full" />}
+                    </div>
+                    <div>
+                      <h3 className="font-bold capitalize">{stat.name}</h3>
+                      <p className="text-sm text-muted-foreground">{result?.rune_name || stat.rune_name || `${t('rune')} ${stat.name.substring(0,3)}`}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-1 text-base bg-muted/30 rounded-md p-1 border">
+                    <span className="text-muted-foreground w-8 text-right text-sm">{stat.min}</span>
+                    <span className="text-muted-foreground/30">·</span>
+                    <Input 
+                      type="text" 
+                      inputMode="numeric"
+                      pattern="-?[0-9]*"
+                      className="w-16 h-8 text-center font-bold text-lg bg-background shadow-sm border-input focus-visible:ring-1 no-spinner"
+                      value={stat.value}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        if (newValue === '' || newValue === '-') {
+                          handleStatValueChange(index, newValue);
+                        } else if (/^-?\d*$/.test(newValue)) {
+                          handleStatValueChange(index, parseInt(newValue, 10));
+                        }
+                      }}
+                    />
+                    <span className="text-muted-foreground/30">·</span>
+                    <span className="text-muted-foreground w-8 text-left text-sm">{stat.max}</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-0 text-sm">
+                  <div className="space-y-2 p-3 rounded-t-md bg-blue-50/20 dark:bg-blue-950/10 border">
+                    <h4 className="font-semibold text-blue-600 dark:text-blue-400">{t('without_focus')}</h4>
+                    <div className="flex justify-between"><span>{t('quantity')}:</span> <Badge variant="outline" className="font-mono text-xs border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">{result?.count?.toFixed(2) || '-'}</Badge></div>
+                    <div className="flex justify-between"><span>{t('total')}:</span> <span className="font-bold text-blue-700 dark:text-blue-400">{total > 0 ? `${formatNumber(total)} k` : '-'}</span></div>
+                  </div>
+                  <div className="space-y-2 p-3 rounded-b-md bg-purple-50/20 dark:bg-purple-950/10 border border-t-0">
+                    <h4 className="font-semibold text-purple-600 dark:text-purple-400">{t('with_focus')}</h4>
+                    <div className="flex justify-between"><span>{t('quantity')}:</span> <Badge variant="outline" className="font-mono text-xs border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400">{result?.focus_count?.toFixed(2) || '-'}</Badge></div>
+                    <div className="flex justify-between"><span>{t('total')}:</span> <span className={`font-bold ${styleClass}`}>{focusTotal > 0 ? `${formatNumber(focusTotal)} k` : '-'}</span></div>
+                  </div>
+                </div>
+              </div>
+            );
+        })}
+        {/* TOTAL SIN FOCUS - Mobile */}
+        <div className="rounded-lg border bg-muted/40 p-4 font-bold">
+            <div className="flex justify-between items-center text-lg">
+                <span>{t('total_without_focus')}</span>
+                {(() => {
+                 let styleClass = 'text-blue-700 dark:text-blue-400';
+                 if (totalSinFocus > 0) {
+                   if (showTop3) {
+                      if (totalSinFocus === sortedValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-xl font-black';
+                      else if (totalSinFocus === sortedValues[1]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-xl font-bold';
+                      else if (totalSinFocus === sortedValues[2]) styleClass = 'text-orange-600 dark:text-orange-400 text-xl font-bold';
+                   } else {
+                      if (totalSinFocus === globalMax) styleClass = 'text-green-600 dark:text-green-400 text-xl';
+                   }
+                 }
+                 return <span className={styleClass}>{formatNumber(totalSinFocus)} k</span>;
+               })()}
+            </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
