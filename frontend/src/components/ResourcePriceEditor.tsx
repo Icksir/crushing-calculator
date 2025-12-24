@@ -297,31 +297,31 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
       {profitItems.length > 0 && (
         <Card ref={resultsRef}>
           <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between flex-wrap gap-4">
                 <CardTitle>{t('opportunities')}</CardTitle>
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
                     <div className="flex items-center gap-2">
                       <Switch id="analysis-mode" checked={showAnalysis} onCheckedChange={setShowAnalysis} />
                       <Label htmlFor="analysis-mode" className="cursor-pointer">{t('analysis_mode')}</Label>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Label className="whitespace-nowrap">{t('min_cost')}</Label>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Label className="whitespace-nowrap flex-shrink-0">{t('min_cost')}</Label>
                         <Input 
                             type="number" 
-                            className="w-32" 
+                            className="w-full sm:w-32" 
                             value={minCostFilter} 
                             onChange={(e) => setMinCostFilter(Number(e.target.value))}
                             onKeyDown={handleKeyDown}
                         />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Label className="whitespace-nowrap text-sm text-muted-foreground">{t('sort_by')}</Label>
-                        <div className="flex items-center gap-2 border rounded-md p-1 bg-muted/20">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                        <Label className="whitespace-nowrap text-sm text-muted-foreground flex-shrink-0">{t('sort_by')}</Label>
+                        <div className="flex items-center gap-2 border rounded-md p-1 bg-muted/20 flex-grow sm:flex-grow-0">
                             <Button 
                                 variant={sortBy === 'profit' ? 'secondary' : 'ghost'} 
                                 size="sm"
                                 onClick={() => { setSortBy('profit'); fetchProfitItems(1, 'profit'); }}
-                                className="h-7 text-xs"
+                                className="h-7 text-xs flex-1 sm:flex-none"
                             >
                                 {t('profit')}
                             </Button>
@@ -329,7 +329,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                 variant={sortBy === 'risk' ? 'secondary' : 'ghost'} 
                                 size="sm"
                                 onClick={() => { setSortBy('risk'); fetchProfitItems(1, 'risk'); }}
-                                className="h-7 text-xs"
+                                className="h-7 text-xs flex-1 sm:flex-none"
                             >
                                 {t('min_coefficient')}
                             </Button>
@@ -342,7 +342,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                     setSortOrder(newOrder); 
                                     fetchProfitItems(1, undefined, newOrder); 
                                 }}
-                                className="h-7 w-7 p-0"
+                                className="h-7 w-7 p-0 flex-shrink-0"
                                 title={sortOrder === 'asc' ? t('asc') : t('desc')}
                             >
                                 {sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
@@ -382,22 +382,22 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                  return (
                    <div 
                       key={item.id} 
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                       onClick={() => onSelectItem?.({ id: item.id, name: item.name, img: item.img })}
                    >
                       <div className="flex items-center gap-4">
                         <div className="relative w-12 h-12 bg-muted rounded-md border overflow-hidden shrink-0">
                           {item.img && <Image src={item.img} alt={item.name} fill className="object-contain p-1" />}
                         </div>
-                        <div>
+                        <div className="flex-auto">
                           <div className="font-medium">{item.name}</div>
                           <div className="text-sm text-muted-foreground">{t('level')} {item.level}</div>
                         </div>
                       </div>
                       
-                      <div className="flex gap-8 text-right">
+                      <div className="flex flex-row gap-4 sm:gap-8 w-full sm:w-auto text-right justify-between sm:justify-end items-start sm:items-center mt-4 sm:mt-0">
                         {showAnalysis ? (
-                            <div className="flex gap-8">
+                            <div className="flex flex-row gap-4 sm:gap-8 w-full sm:w-auto text-right justify-between sm:justify-end">
                                 <div>
                                     <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t('gap')}</div>
                                     <div className={`text-lg font-bold ${heuristicColor}`}>
