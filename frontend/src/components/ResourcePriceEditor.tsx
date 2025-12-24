@@ -234,7 +234,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                 )}
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+                <ScrollArea className="h-[600px] pr-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {resources.map(resource => (
                       <div key={resource.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
@@ -248,9 +248,8 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                             />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate" title={resource.name}>{resource.name}</div>
-                          <div className="text-xs text-muted-foreground">ID: {resource.id}</div>
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="text-sm font-medium">{resource.name}</div>
                         </div>
                         <div className="flex items-center gap-2">
                           <TooltipProvider>
@@ -260,7 +259,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                   <Input 
                                     type="number" 
                                     placeholder={prices[resource.id]?.price === -1 ? "---" : "0"}
-                                    className={`text-right h-8 w-24 ${prices[resource.id]?.price === -1 ? 'opacity-50 bg-muted' : ''}`}
+                                    className={`text-right h-8 w-[70px] ${prices[resource.id]?.price === -1 ? 'opacity-50 bg-muted' : ''}`}
                                     value={prices[resource.id]?.price === -1 ? '' : (prices[resource.id]?.price || '')}
                                     disabled={prices[resource.id]?.price === -1}
                                     onChange={e => handlePriceChange(resource.id, Number(e.target.value))}
