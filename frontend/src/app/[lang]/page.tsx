@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2, Settings } from 'lucide-react';
+import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2, Settings, History } from 'lucide-react';
 import { ResourcePriceEditor } from '@/components/ResourcePriceEditor';
 import { RunePriceEditor } from '@/components/RunePriceEditor';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -22,6 +22,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import CoefficientHistoryModal from '@/components/modals/CoefficientHistoryModal';
+import { WhatsNewBanner } from '@/components/WhatsNewBanner';
+import { Footer } from '@/components/Footer';
 
 const SERVERS = [
   'Dakal', 'Brial', 'Draconiros', 'Hell Mina', 'Imagiro', 'Kourial',
@@ -44,16 +47,27 @@ const Calculator = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [visibleRunes, setVisibleRunes] = useState(7);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [coeffChanged, setCoeffChanged] = useState(false);
 
   const runesContainerRef = useRef<HTMLDivElement>(null);
   
   const { runePrices, server, setServer } = useRunePrices();
   const { t, language } = useLanguage();
   const prevLanguageRef = useRef(language);
+  const lastSavedCoeffRef = useRef<number | ''>(100);
 
   useEffect(() => {
     setIsHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (coeff !== lastSavedCoeffRef.current) {
+      setCoeffChanged(true);
+    } else {
+      setCoeffChanged(false);
+    }
+  }, [coeff]);
 
   const ServerSwitcher = () => {
     if (!isHydrated) {
@@ -166,6 +180,8 @@ const Calculator = () => {
       setLoadingDetails(false);
       setIsSaving(false);
       setActiveTab('calculator');
+      lastSavedCoeffRef.current = 100;
+      setCoeffChanged(false);
       
       prevLanguageRef.current = language;
     }
@@ -186,6 +202,8 @@ const Calculator = () => {
     setShowTop3(false);
     setIsSaving(false);
     setActiveTab('calculator');
+    lastSavedCoeffRef.current = 100;
+    setCoeffChanged(false);
   }, [server]);
 
   useEffect(() => {
@@ -234,9 +252,12 @@ const Calculator = () => {
         setDisplayLevel(details.level.toString());
         if (details.last_coefficient) {
           setCoeff(details.last_coefficient);
+          lastSavedCoeffRef.current = details.last_coefficient;
         } else {
           setCoeff(100);
+          lastSavedCoeffRef.current = 100;
         }
+        setCoeffChanged(false);
         console.log("Setting date:", details.last_coefficient_date);
         // Ensure we handle both null and undefined explicitly
         setLastCoeffDate(details.last_coefficient_date ?? null);
@@ -305,6 +326,8 @@ const Calculator = () => {
         server
       );
       setLastCoeffDate(new Date().toISOString());
+      lastSavedCoeffRef.current = coeff;
+      setCoeffChanged(false);
     } catch (e) {
       console.error("Failed to save coefficient", e);
     } finally {
@@ -443,6 +466,12 @@ const Calculator = () => {
           </div>
         </div>
 
+        {activeTab === 'calculator' && !selectedItem && (
+          <div className="mt-6">
+            <WhatsNewBanner />
+          </div>
+        )}
+
         <div className={activeTab === 'calculator' ? 'block' : 'hidden'}>
           {selectedItem ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -518,12 +547,22 @@ const Calculator = () => {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-8 w-8 ml-1 text-muted-foreground hover:text-primary"
+                              className={`h-8 w-8 ml-1 text-muted-foreground hover:text-primary ${coeffChanged ? 'animate-pulse' : ''}`}
                               onClick={handleSaveCoefficient}
                               disabled={isSaving || coeff === ''}
                               title={t('save_coefficient')}
                             >
                               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 ml-1 text-muted-foreground hover:text-primary"
+                              onClick={() => setShowHistory(true)}
+                              disabled={!selectedItem}
+                              title="Ver historial"
+                            >
+                              <History className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -618,7 +657,7 @@ const Calculator = () => {
             </div>
           </div>
           ) : (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-in fade-in zoom-in duration-500">
+          <div className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-6 animate-in fade-in zoom-in duration-500">
             <div className="bg-muted/30 p-8 rounded-full">
               <CalculatorIcon size={64} className="text-muted-foreground/50" />
             </div>
@@ -647,6 +686,17 @@ const Calculator = () => {
           </div>
         </div>
       </main>
+
+      {!selectedItem && <Footer />}
+
+      {selectedItem && (
+        <CoefficientHistoryModal
+          isOpen={showHistory}
+          onClose={() => setShowHistory(false)}
+          itemId={selectedItem.id}
+          server={server}
+        />
+      )}
     </div>
   );
 };

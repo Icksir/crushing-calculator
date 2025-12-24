@@ -81,10 +81,6 @@ export default async function RootLayout({
 
           </RunePriceProvider>
         </LanguageProvider>
-        
-        <footer className="w-full py-4 text-center text-sm text-muted-foreground bg-background/95 border-t mt-auto">
-          <p>Las imágenes pertenecen a Ankama.</p>
-        </footer>
       </body>
     </html>
   );
