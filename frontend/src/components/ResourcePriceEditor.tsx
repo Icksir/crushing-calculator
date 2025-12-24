@@ -204,18 +204,19 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                         min={1} max={200}
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Button onClick={() => handleLoadResources(false)} disabled={loading}>
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                        {t('load')}
-                      </Button>
-                      <Button onClick={() => handleLoadResources(true)} disabled={loading} variant="outline" size="icon" title={t('force_reload')}>
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                      </Button>
-                      <Button onClick={handleCalculateProfit} disabled={calculatingProfit} variant="secondary">
-                        {calculatingProfit ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Calculator className="w-4 h-4 mr-2" />}
-                        {t('search_opportunities')}
-                      </Button>
+                    <div className="flex items-center gap-2 col-span-1">
+                        <Button onClick={() => handleLoadResources(false)} disabled={loading}>
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          {t('load')}
+                        </Button>
+                        <Button onClick={() => handleLoadResources(true)} variant="outline" size="icon" title={t('force_reload')}>
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
+                        <Button onClick={handleCalculateProfit} className="flex-1 min-w-0" disabled={calculatingProfit}>
+                           <Calculator className="w-4 h-4 mr-0 sm:mr-2 flex-shrink-0" />
+                           <span className="hidden sm:inline">{t('search_opportunities')}</span>
+                           {calculatingProfit && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+                        </Button>
                     </div>
                   </div>
                 </CardContent>
