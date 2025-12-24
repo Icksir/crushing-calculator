@@ -25,6 +25,10 @@ export const translations: Record<Language, Record<string, string>> = {
     min_coefficient: 'Coeficiente Mínimo',
     no_item_found: 'No se ha encontrado un objeto. Utiliza el buscador para empezar.',
     crushing_calculator_title: 'Calculadora de Rompimiento',
+    coefficient_history_title: 'Historial de Coeficiente',
+    whats_new_title: '¡Novedades!',
+    whats_new_item_1: 'Mejora en la interfaz para dispositivos móviles',
+    whats_new_item_2: 'Añadido gráfico para poder ver variaciones en los coeficientes',
 
     // Rune Table
     characteristic: 'Característica',
@@ -106,6 +110,8 @@ export const translations: Record<Language, Record<string, string>> = {
     meta_title: "Kamaskope - Calculadora de Runas Dofus y Precios de Forjamagia",
     meta_description: "Calculadora de runas y precios de forjamagia para Dofus. Optimiza tus ganancias rompiendo objetos y gestionando tus recursos con coeficientes actualizados.",
     logo_alt_text: "Kamaskope Logo",
+    footer_made_with: 'Hecho con',
+    footer_by: 'por',
   },
   en: {
     // General
@@ -131,6 +137,10 @@ export const translations: Record<Language, Record<string, string>> = {
     min_coefficient: 'Minimum Coefficient',
     no_item_found: 'No item found. Use the search bar to begin.',
     crushing_calculator_title: 'Crushing Calculator',
+    coefficient_history_title: 'Coefficient History',
+    whats_new_title: 'What\'s New!',
+    whats_new_item_1: 'Improved interface for mobile devices',
+    whats_new_item_2: 'Added chart to see coefficient variations',
 
     // Rune Table
     characteristic: 'Characteristic',
@@ -212,6 +222,8 @@ export const translations: Record<Language, Record<string, string>> = {
     meta_title: "Kamaskope - Dofus Rune Calculator & Forgemagy Prices",
     meta_description: "Dofus rune and forgemagy prices calculator. Optimize your profits by crushing items and managing your resources with up-to-date coefficients.",
     logo_alt_text: "Kamaskope Logo",
+    footer_made_with: 'Made with',
+    footer_by: 'by',
   },
   fr: {
     // General
@@ -237,6 +249,10 @@ export const translations: Record<Language, Record<string, string>> = {
     min_coefficient: 'Coefficient Minimum',
     no_item_found: 'Aucun objet trouvé. Utilisez la recherche pour commencer.',
     crushing_calculator_title: 'Calculateur de Concassage',
+    coefficient_history_title: 'Historique du Coefficient',
+    whats_new_title: 'Quoi de neuf !',
+    whats_new_item_1: 'Interface améliorée pour les appareils mobiles',
+    whats_new_item_2: 'Ajout d\'un graphique pour voir les variations des coefficients',
 
     // Rune Table
     characteristic: 'Caractéristique',
@@ -318,5 +334,7 @@ export const translations: Record<Language, Record<string, string>> = {
     meta_title: "Kamaskope - Calculateur de Runes Dofus et Prix de Forgemagie",
     meta_description: "Calculateur de runes et prix de forgemagie pour Dofus. Optimisez vos gains en brisant des objets et en gérant vos ressources avec des coefficients à jour.",
     logo_alt_text: "Logo Kamaskope",
+    footer_made_with: 'Fait avec',
+    footer_by: 'par',
   },
 };
