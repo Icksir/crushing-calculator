@@ -14,13 +14,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2 } from 'lucide-react';
+import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2, Settings } from 'lucide-react';
 import { ResourcePriceEditor } from '@/components/ResourcePriceEditor';
 import { RunePriceEditor } from '@/components/RunePriceEditor';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/context/LanguageContext';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 
 const SERVERS = [
   'Dakal', 'Brial', 'Draconiros', 'Hell Mina', 'Imagiro', 'Kourial',
@@ -84,6 +85,70 @@ const Calculator = () => {
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+    );
+  };
+
+  const CombinedSwitcher = () => {
+    const pathname = usePathname();
+    const router = useRouter();
+
+    const handleLanguageChange = (newLang: string) => {
+        if (!pathname) return;
+        const segments = pathname.split('/');
+        segments[1] = newLang;
+        const newPath = segments.join('/');
+        router.push(newPath);
+    };
+
+    const flags: Record<string, string> = {
+        es: '🇪🇸',
+        en: '🇬🇧',
+        fr: '🇫🇷',
+    };
+
+    if (!isHydrated) {
+        return (
+            <Button variant="ghost" size="icon" disabled>
+                <Loader2 className="h-4 w-4 animate-spin" />
+            </Button>
+        );
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <Settings className="h-5 w-5" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled>
+                    <span className="text-sm font-medium text-muted-foreground">{t('server')}</span>
+                </DropdownMenuItem>
+                {SERVERS.map((srv) => (
+                    <DropdownMenuItem
+                        key={srv}
+                        onClick={() => setServer(srv)}
+                        className={server === srv ? 'bg-accent' : ''}
+                    >
+                        {srv}
+                    </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled>
+                    <span className="text-sm font-medium text-muted-foreground">{t('language')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleLanguageChange('es')}>
+                    <span className="mr-2 text-lg">{flags.es}</span> Español
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleLanguageChange('en')}>
+                    <span className="mr-2 text-lg">{flags.en}</span> English
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleLanguageChange('fr')}>
+                    <span className="mr-2 text-lg">{flags.fr}</span> Français
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
   };
 
@@ -338,9 +403,12 @@ const Calculator = () => {
           </div>
 
           {/* Right: Server and Language Switchers */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             <ServerSwitcher />
             <LanguageSwitcher />
+          </div>
+          <div className="md:hidden">
+            <CombinedSwitcher />
           </div>
 
         </div>
@@ -564,7 +632,7 @@ const Calculator = () => {
           )}
         </div>
 
-        <div className={activeTab === 'runes' ? 'block' : 'hidden'}>
+        <div className={activeTab === 'runes' ? 'flex flex-col flex-1' : 'hidden'}>
           <RunePriceEditor />
         </div>
         
