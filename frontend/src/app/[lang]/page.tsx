@@ -485,21 +485,21 @@ const Calculator = () => {
               <Button variant={activeTab === 'resources' ? 'default' : 'ghost'} onClick={() => setActiveTab('resources')} className="h-10 flex-shrink-0">{t('resource_prices')}</Button>
             </div>
           </div>
-          <div ref={runesContainerRef} className="hidden md:flex items-center justify-end gap-3">
+          <div 
+            className="hidden md:flex flex-1 items-center justify-end gap-3 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%)]"
+          >
             {Object.entries(runePrices)
               .filter(([name, rune]) => {
                 const n = name.toLowerCase();
                 return (n.includes('rune') || n.includes('runa')) && rune.image_url;
               })
-              .slice(0, visibleRunes)
+              // 4. AUMENTA este número. En lugar de calcularlo, pon un fijo alto (ej. 30 o 40).
+              // Al tener overflow-hidden, las que sobren simplemente no se verán, pero el espacio estará lleno.
+              .slice(0, 30) 
               .map(([name, rune]) => (
-                <div key={name} className="relative w-8 h-8 opacity-40 hover:opacity-100 transition-opacity">
-                  <Image
-                    src={rune.image_url!}
-                    alt=""
-                    fill
-                    className="object-contain"
-                  />
+                // ... (tu código del item sigue igual)
+                <div key={name} className="relative w-8 h-8 opacity-40 hover:opacity-100 transition-opacity cursor-pointer shrink-0" title={name}>
+                  <Image src={rune.image_url!} alt="" fill className="object-contain" sizes="32px"/>
                 </div>
               ))}
           </div>
