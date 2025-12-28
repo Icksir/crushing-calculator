@@ -54,7 +54,59 @@ export const RunePriceEditor = () => {
                                 type="number" 
                                 className="text-right h-8"
                                 value={data.price}
-                                onChange={e => updatePrice(rune, Number(e.target.value))}
+                                min={0}
+                                max={10000000}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === '') {
+                                    updatePrice(rune, 0);
+                                    return;
+                                  }
+                                  let num = Number(val);
+                                  if (isNaN(num)) return;
+                                  if (num < 0) num = 0;
+                                  if (num > 10000000) num = 10000000;
+                                  updatePrice(rune, num);
+                                }}
+                                onKeyDown={(e) => {
+                                  // Block minus sign and disallow non-numeric (except control/navigation keys)
+                                  const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
+                                  const isDigit = /^[0-9]$/.test(e.key);
+                                  const isControl = controlKeys.includes(e.key);
+                                  // Allow '.' if user enters decimals; block only '-'
+                                  if (e.key === '-') {
+                                    e.preventDefault();
+                                    return;
+                                  }
+                                  if (!isDigit && !isControl && e.key !== '.') {
+                                    e.preventDefault();
+                                    return;
+                                  }
+                                  // Prevent creating a value > 10000000 when typing another digit
+                                  if (isDigit) {
+                                    const input = e.currentTarget as HTMLInputElement;
+                                    const start = input.selectionStart ?? input.value.length;
+                                    const end = input.selectionEnd ?? input.value.length;
+                                    const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
+                                    const newNum = Number(newValStr);
+                                    if (!Number.isNaN(newNum) && newNum > 10000000) {
+                                      e.preventDefault();
+                                      return;
+                                    }
+                                  }
+                                }}
+                                onPaste={(e) => {
+                                  const text = e.clipboardData.getData('text');
+                                  const sanitized = text.replace(/[^0-9.]/g, '');
+                                  const num = Number(sanitized);
+                                  if (!Number.isNaN(num)) {
+                                    e.preventDefault();
+                                    let clamped = num;
+                                    if (clamped < 0) clamped = 0;
+                                    if (clamped > 10000000) clamped = 10000000;
+                                    updatePrice(rune, clamped);
+                                  }
+                                }}
                               />
                             </div>
                           </TooltipTrigger>

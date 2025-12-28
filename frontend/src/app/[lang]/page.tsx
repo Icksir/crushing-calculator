@@ -5,7 +5,7 @@ import { ItemSearch } from '@/components/ItemSearch';
 import { RuneTable } from '@/components/RuneTable';
 import { RecipeEditor } from '@/components/RecipeEditor';
 import { RunePriceProvider, useRunePrices } from '@/context/RunePriceContext';
-import { ItemSearchResponse, ItemStat, CalculateResponse, calculateProfit, getItemDetails, Ingredient, saveItemCoefficient } from '@/lib/api';
+import { ItemSearchResponse, ItemStat, CalculateResponse, calculateProfit, getItemDetails, Ingredient, saveItemCoefficient, submitPredictionData } from '@/lib/api';
 import { formatNumber, formatDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,7 @@ const Calculator = () => {
   const [coeffChanged, setCoeffChanged] = useState(false);
 
   const runesContainerRef = useRef<HTMLDivElement>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { runePrices, server, setServer } = useRunePrices();
   const { t, language } = useLanguage();
@@ -335,6 +336,27 @@ const Calculator = () => {
     }
   };
 
+  const handleAutomaticSave = async (totalValue: number, profit: number) => {
+    // Conditions: selectedItem present, coeff not empty, cost > 0, rune prices present, not already saving
+    if (!selectedItem || coeff === '' || cost <= 0 || Object.keys(runePrices).length === 0 || isSaving) {
+      return;
+    }
+    
+    try {
+      await submitPredictionData(
+        selectedItem.id, 
+        coeff, 
+        cost,
+        totalValue,
+        profit,
+        language, 
+        server
+      );
+    } catch (e) {
+      console.error("Automatic prediction submission failed", e);
+    }
+  };
+
   const liveMetrics = useMemo(() => {
     if (!result?.breakdown) return { totalValue: 0, profit: 0, breakEvenCoeff: 0 };
 
@@ -399,6 +421,23 @@ const Calculator = () => {
       breakEvenCoeff
     };
   }, [result, runePrices, cost, coeff, stats]);
+
+  // Auto-save effect: debounce coefficient changes and submit to prediction dataset
+  useEffect(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      handleAutomaticSave(liveMetrics.totalValue, liveMetrics.profit);
+    }, 5000); // 5-second debounce
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [coeff, cost, selectedItem, runePrices, isSaving, liveMetrics, language, server, handleAutomaticSave]);
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 flex flex-col font-sans">
@@ -520,7 +559,59 @@ const Calculator = () => {
                           <Input 
                             type="number" 
                             value={cost} 
-                            onChange={(e) => setCost(Number(e.target.value))} 
+                            min={0}
+                            max={10000000}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '') {
+                                setCost(0);
+                                return;
+                              }
+                              let num = Number(val);
+                              if (isNaN(num)) return;
+                              if (num < 0) num = 0;
+                              if (num > 10000000) num = 10000000;
+                              setCost(num);
+                            }}
+                            onKeyDown={(e) => {
+                              // Block minus sign and disallow non-numeric (except control/navigation keys)
+                              const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
+                              const isDigit = /^[0-9]$/.test(e.key);
+                              const isControl = controlKeys.includes(e.key);
+                              // Allow '.' if user enters decimals; block only '-'
+                              if (e.key === '-') {
+                                e.preventDefault();
+                                return;
+                              }
+                              if (!isDigit && !isControl && e.key !== '.') {
+                                e.preventDefault();
+                                return;
+                              }
+                              // Prevent creating a value > 10000000 when typing another digit
+                              if (isDigit) {
+                                const input = e.currentTarget as HTMLInputElement;
+                                const start = input.selectionStart ?? input.value.length;
+                                const end = input.selectionEnd ?? input.value.length;
+                                const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
+                                const newNum = Number(newValStr);
+                                if (!Number.isNaN(newNum) && newNum > 10000000) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                              }
+                            }}
+                            onPaste={(e) => {
+                              const text = e.clipboardData.getData('text');
+                              const sanitized = text.replace(/[^0-9.]/g, '');
+                              const num = Number(sanitized);
+                              if (!Number.isNaN(num)) {
+                                e.preventDefault();
+                                let clamped = num;
+                                if (clamped < 0) clamped = 0;
+                                if (clamped > 10000000) clamped = 10000000;
+                                setCost(clamped);
+                              }
+                            }}
                             className="h-8 w-full text-right font-mono text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-2 bg-transparent no-spinner"
                           />
                           <span className="text-base font-bold">K</span>
@@ -539,7 +630,59 @@ const Calculator = () => {
                             <Input 
                               type="number" 
                               value={coeff} 
-                              onChange={(e) => setCoeff(e.target.value === '' ? '' : Number(e.target.value))} 
+                              min={0}
+                              max={4000}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  setCoeff('');
+                                  return;
+                                }
+                                let num = Number(val);
+                                if (isNaN(num)) return;
+                                if (num < 0) num = 0;
+                                if (num > 4000) num = 4000;
+                                setCoeff(num);
+                              }} 
+                              onKeyDown={(e) => {
+                                // Block minus sign and disallow non-numeric (except control/navigation keys)
+                                const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
+                                const isDigit = /^[0-9]$/.test(e.key);
+                                const isControl = controlKeys.includes(e.key);
+                                // Allow '.' if user enters decimals; block only '-'
+                                if (e.key === '-') {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                if (!isDigit && !isControl && e.key !== '.') {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                // Prevent creating a value > 4000 when typing another digit
+                                if (isDigit) {
+                                  const input = e.currentTarget as HTMLInputElement;
+                                  const start = input.selectionStart ?? input.value.length;
+                                  const end = input.selectionEnd ?? input.value.length;
+                                  const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
+                                  const newNum = Number(newValStr);
+                                  if (!Number.isNaN(newNum) && newNum > 4000) {
+                                    e.preventDefault();
+                                    return;
+                                  }
+                                }
+                              }}
+                              onPaste={(e) => {
+                                const text = e.clipboardData.getData('text');
+                                const sanitized = text.replace(/[^0-9.]/g, '');
+                                const num = Number(sanitized);
+                                if (!Number.isNaN(num)) {
+                                  e.preventDefault();
+                                  let clamped = num;
+                                  if (clamped < 0) clamped = 0;
+                                  if (clamped > 4000) clamped = 4000;
+                                  setCoeff(clamped);
+                                }
+                              }}
                               className="h-8 w-full text-right font-bold text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-2 bg-transparent no-spinner"
                               placeholder={loadingDetails ? "---" : "100"}
                             />

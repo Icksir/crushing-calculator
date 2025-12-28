@@ -276,9 +276,62 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
                             type="number" 
                             className="w-24 h-8 pr-6 text-right font-mono text-sm"
                             value={runePrices[result?.rune_name || stat.rune_name || '']?.price || 0}
+                            min={0}
+                            max={10000000}
                             onChange={(e) => {
+                              const val = e.target.value;
                               const runeName = result?.rune_name || stat.rune_name;
-                              if (runeName) updatePrice(runeName, Number(e.target.value));
+                              if (!runeName) return;
+                              
+                              if (val === '') {
+                                updatePrice(runeName, 0);
+                                return;
+                              }
+                              let num = Number(val);
+                              if (isNaN(num)) return;
+                              if (num < 0) num = 0;
+                              if (num > 10000000) num = 10000000;
+                              updatePrice(runeName, num);
+                            }}
+                            onKeyDown={(e) => {
+                              // Block minus sign and disallow non-numeric (except control/navigation keys)
+                              const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
+                              const isDigit = /^[0-9]$/.test(e.key);
+                              const isControl = controlKeys.includes(e.key);
+                              // Allow '.' if user enters decimals; block only '-'
+                              if (e.key === '-') {
+                                e.preventDefault();
+                                return;
+                              }
+                              if (!isDigit && !isControl && e.key !== '.') {
+                                e.preventDefault();
+                                return;
+                              }
+                              // Prevent creating a value > 10000000 when typing another digit
+                              if (isDigit) {
+                                const input = e.currentTarget as HTMLInputElement;
+                                const start = input.selectionStart ?? input.value.length;
+                                const end = input.selectionEnd ?? input.value.length;
+                                const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
+                                const newNum = Number(newValStr);
+                                if (!Number.isNaN(newNum) && newNum > 10000000) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                              }
+                            }}
+                            onPaste={(e) => {
+                              const text = e.clipboardData.getData('text');
+                              const sanitized = text.replace(/[^0-9.]/g, '');
+                              const num = Number(sanitized);
+                              if (!Number.isNaN(num)) {
+                                e.preventDefault();
+                                let clamped = num;
+                                if (clamped < 0) clamped = 0;
+                                if (clamped > 10000000) clamped = 10000000;
+                                const runeName = result?.rune_name || stat.rune_name;
+                                if (runeName) updatePrice(runeName, clamped);
+                              }
                             }}
                           />
                         </div>
