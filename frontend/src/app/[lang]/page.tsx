@@ -57,6 +57,7 @@ const Calculator = () => {
   const { t, language } = useLanguage();
   const prevLanguageRef = useRef(language);
   const lastSavedCoeffRef = useRef<number | ''>(100);
+  const lastAutoSentCoeffRef = useRef<string | null>(null);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -241,11 +242,15 @@ const Calculator = () => {
     setStats(item.stats); 
     setResult(null);
     setRecipe([]);
-    setCoeff(''); // Reset to empty while loading
+    setCoeff(''); 
     setLastCoeffDate(null);
     setLoadingDetails(true);
     setDisplayLevel("Cargando...");
     
+    // --- NUEVO: Reseteamos la referencia de autoguardado ---
+    lastAutoSentCoeffRef.current = null; 
+    // ------------------------------------------------------
+
     try {
       const details = await getItemDetails(item.id, language, server);
       if (details) {
@@ -259,10 +264,8 @@ const Calculator = () => {
           lastSavedCoeffRef.current = 100;
         }
         setCoeffChanged(false);
-        console.log("Setting date:", details.last_coefficient_date);
-        // Ensure we handle both null and undefined explicitly
         setLastCoeffDate(details.last_coefficient_date ?? null);
-        // Fix for unique values where max is missing/zero
+        
         const processedStats = details.stats.map(stat => {
           const max = stat.max || stat.min;
           const min = stat.min;
@@ -336,27 +339,6 @@ const Calculator = () => {
     }
   };
 
-  const handleAutomaticSave = async (totalValue: number, profit: number) => {
-    // Conditions: selectedItem present, coeff not empty, cost > 0, rune prices present, not already saving
-    if (!selectedItem || coeff === '' || cost <= 0 || Object.keys(runePrices).length === 0 || isSaving) {
-      return;
-    }
-    
-    try {
-      await submitPredictionData(
-        selectedItem.id, 
-        coeff, 
-        cost,
-        totalValue,
-        profit,
-        language, 
-        server
-      );
-    } catch (e) {
-      console.error("Automatic prediction submission failed", e);
-    }
-  };
-
   const liveMetrics = useMemo(() => {
     if (!result?.breakdown) return { totalValue: 0, profit: 0, breakEvenCoeff: 0 };
 
@@ -422,6 +404,58 @@ const Calculator = () => {
     };
   }, [result, runePrices, cost, coeff, stats]);
 
+  const handleAutomaticSave = async () => {
+    // Validaciones
+    if (!selectedItem || coeff === '' || cost <= 0 || isSaving) return;
+    
+    // Validar que existan métricas calculadas
+    if (liveMetrics.totalValue <= 0) return;
+    
+    // Evitar duplicados (convertimos a String para comparar seguro)
+    if (String(coeff) === String(lastAutoSentCoeffRef.current)) return;
+
+    try {
+      await submitPredictionData(
+        selectedItem.id, 
+        Number(coeff), 
+        cost,
+        liveMetrics.totalValue, // Lee directo del estado
+        liveMetrics.profit,     // Lee directo del estado
+        server
+      );
+      
+      lastAutoSentCoeffRef.current = String(coeff);
+    } catch (e) {
+      console.warn("Fallo silencioso en auto-envío", e);
+    }
+  };
+
+  // --- EFFECT DEL DEBOUNCE (5 SEGUNDOS) ---
+  useEffect(() => {
+    // Si faltan datos críticos, limpiamos y no hacemos nada
+    if (!selectedItem || coeff === '' || isSaving) {
+        if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+        return;
+    }
+
+    // Limpiar timeout anterior
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Configurar nuevo timeout
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      handleAutomaticSave(); // <--- CORRECCIÓN: Llamada vacía, sin argumentos
+    }, 5000);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+    // Quitamos 'handleAutomaticSave' de las dependencias para evitar re-ejecuciones infinitas si la función no tiene useCallback
+  }, [coeff, cost, selectedItem, runePrices, isSaving, liveMetrics, language, server]);
+
   // Auto-save effect: debounce coefficient changes and submit to prediction dataset
   useEffect(() => {
     if (autoSaveTimeoutRef.current) {
@@ -429,7 +463,7 @@ const Calculator = () => {
     }
 
     autoSaveTimeoutRef.current = setTimeout(() => {
-      handleAutomaticSave(liveMetrics.totalValue, liveMetrics.profit);
+      handleAutomaticSave();
     }, 5000); // 5-second debounce
 
     return () => {
