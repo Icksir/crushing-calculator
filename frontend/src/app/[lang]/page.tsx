@@ -421,6 +421,7 @@ const Calculator = () => {
         cost,
         liveMetrics.totalValue, // Lee directo del estado
         liveMetrics.profit,     // Lee directo del estado
+        language,
         server
       );
       

@@ -64,11 +64,13 @@ export default async function RootLayout({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
+  const supportedLangs: Language[] = ['es', 'en', 'fr'];
+  const validLang = supportedLangs.includes(lang as Language) ? (lang as Language) : 'es';
   
   return (
-    <html lang={lang || 'es'} className="dark">
+    <html lang={validLang} className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans flex flex-col min-h-screen`}>
-        <LanguageProvider initialLanguage={(lang as Language) || 'es'}>
+        <LanguageProvider initialLanguage={validLang}>
           <RunePriceProvider>
             
             {/* 2. AQUÍ VA EL BANNER */}
