@@ -8,7 +8,7 @@ def dump_db():
         settings = get_settings()
         url = settings.database_url
         
-        # Handle asyncpg driver in URL
+        # Limpiar driver asyncpg si existe
         if "+asyncpg" in url:
             url = url.replace("+asyncpg", "")
             
@@ -16,55 +16,43 @@ def dump_db():
         
         user = parsed.username
         password = parsed.password
+        # El host suele ser 'localhost' si corres el script fuera de Docker
+        # o el nombre del servicio si corres el script dentro de la red de Docker
         host = parsed.hostname
         port = parsed.port or 5432
         dbname = parsed.path.lstrip('/')
         
-        print(f"🔌 Database: {dbname} on {host}:{port} (User: {user})")
-        
+        # NOMBRE DEL CONTENEDOR SEGÚN TU `docker ps`
+        container_name = "crushing_calculator_db"
         output_file = "dofus_db_backup.sql"
-        
-        # Determine how to run pg_dump
-        cmd = []
-        env = os.environ.copy()
-        
-        if host == 'db':
-            print("🐳 Detected Docker service 'db'. Using docker-compose...")
-            # Use docker-compose to execute pg_dump inside the db container
-            cmd = [
-                "docker-compose", "exec", "-T", 
-                "-e", f"PGPASSWORD={password}",
-                "db",
-                "pg_dump",
-                "-U", user,
-                "-d", dbname,
-                "--clean", "--if-exists"
-            ]
-        else:
-            print("🖥️  Running pg_dump locally...")
-            env["PGPASSWORD"] = password
-            cmd = [
-                "pg_dump",
-                "-h", host,
-                "-p", str(port),
-                "-U", user,
-                "-d", dbname,
-                "--clean", "--if-exists"
-            ]
 
-        print(f"🚀 Dumping to {output_file}...")
+        print(f"🔌 Intentando volcado de: {dbname} desde el contenedor {container_name}")
+
+        # Comando para ejecutar pg_dump DENTRO del contenedor de Docker
+        # Esto evita que necesites tener instalado postgres-client en tu PC local
+        cmd = [
+            "docker", "exec", "-t",
+            "-e", f"PGPASSWORD={password}",
+            container_name,
+            "pg_dump",
+            "-U", user,
+            "-d", dbname,
+            "--clean",
+            "--if-exists"
+        ]
+
+        print(f"🚀 Ejecutando backup en {output_file}...")
         
-        # Run the command and redirect stdout to the file
-        with open(output_file, "w") as f:
-            subprocess.run(cmd, stdout=f, check=True, env=env)
+        with open(output_file, "w", encoding="utf-8") as f:
+            # Ejecutamos el comando de docker directamente
+            subprocess.run(cmd, stdout=f, check=True)
             
-        print(f"✅ Dump successful! Saved to {output_file}")
+        print(f"✅ ¡Dump exitoso! Guardado en {output_file}")
         
-    except ImportError as e:
-        print(f"❌ Import Error: {e}")
-        print("Make sure you are running this script from the correct environment.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error de Docker/Postgres: {e}")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Error inesperado: {e}")
 
 if __name__ == "__main__":
     dump_db()

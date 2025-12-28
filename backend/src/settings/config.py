@@ -21,6 +21,10 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://usuario:password@localhost:5432/nombre_db"
     
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+
     # CORS
     cors_origins: str = "http://localhost:8080,https://kamaskope.icksir.com" 
     

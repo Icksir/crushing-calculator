@@ -1,7 +1,7 @@
 import asyncio
-from src.db.database import engine, Base
+from db.database import engine, Base
 # Import models so they are registered with Base
-from src.models.sql_models import RunePriceModel, IngredientPriceModel, ItemCoefficientHistoryModel
+from models.sql_models import RunePriceModel, IngredientPriceModel, ItemCoefficientHistoryModel
 
 async def init_models():
     async with engine.begin() as conn:
