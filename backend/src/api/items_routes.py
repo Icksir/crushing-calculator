@@ -206,7 +206,126 @@ async def save_item_coefficient(
             
             day_of_week=now_dt.weekday(),
             hour_of_day=now_dt.hour,
-            days_since_last_update=days_since
+            days_since_last_update=days_since,
+            saved=True  # Manual save - guardado explícito por el usuario
+        )
+        db.add(pred_entry)
+
+    except Exception as e:
+        print(f"Error creating prediction dataset entry: {e}")
+        pass
+
+    await db.commit()
+    return {"status": "success"}
+
+
+@router.post("/items/{ankama_id}/prediction")
+async def submit_prediction_data(
+    ankama_id: int, 
+    request: ItemCoefficientRequest, 
+    lang: str = "es",
+    server: str = "Dakal",
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Automatic coefficient submission to prediction dataset.
+    ONLY adds to PredictionDataset (saved=False), does NOT update item_coefficient_history.
+    Used for aggressive automatic data collection as user types.
+    """
+    # 0. Get Previous Coefficient (Trend) - BEFORE adding new entry
+    prev_entry_query = select(ItemCoefficientHistoryModel).where(
+        ItemCoefficientHistoryModel.item_id == ankama_id,
+        ItemCoefficientHistoryModel.server == server
+    ).order_by(desc(ItemCoefficientHistoryModel.created_at)).limit(1)
+    
+    prev_entry_res = await db.execute(prev_entry_query)
+    prev_entry = prev_entry_res.scalar_one_or_none()
+    
+    previous_coefficient_24h = prev_entry.coefficient if prev_entry else None
+    
+    days_since = 0.0
+    if prev_entry:
+        last_time = prev_entry.created_at
+        if last_time.tzinfo:
+            now = datetime.now(last_time.tzinfo)
+        else:
+            now = datetime.now()
+        diff = now - last_time
+        days_since = diff.total_seconds() / 86400.0
+    else:
+        days_since = -1
+
+    # Gather Data for PredictionDataset
+    try:
+        # Get Item Details
+        item = await get_item_details(ankama_id, lang)
+        if not item:
+            await db.commit()
+            return {"status": "success", "warning": "Item details not found for prediction"}
+
+        # Calculate Craft Cost & Profit from request
+        craft_cost = request.craft_cost
+        rune_value_real = request.rune_value
+        profit_amount = request.profit
+        
+        # Determine high value runes and dominant rune type
+        has_high_value_rune = False
+        dominant_rune_type = "Generic"
+        
+        if item.stats:
+            # Detect High Value Runes (Flag only)
+            for stat in item.stats:
+                canonical = get_canonical_stat_name(stat.name, lang)
+                if stat.value > 0 and canonical in {"PA", "PM", "Alcance", "Crítico"}:
+                    has_high_value_rune = True
+
+            # Determine dominant_rune_type
+            rune_prices_res = await db.execute(select(RunePriceModel).where(RunePriceModel.server == server))
+            rune_prices = {r.rune_name: r.price for r in rune_prices_res.scalars()}
+
+            calc_req = CalculateRequest(
+                item_level=item.level,
+                stats=item.stats,
+                coefficient=request.coefficient, 
+                item_cost=craft_cost,
+                rune_prices=rune_prices,
+                lang=lang,
+                server=server
+            )
+            
+            calc_res = await calculate_profit(calc_req)
+            
+            if calc_res.net_profit == calc_res.max_focus_profit and calc_res.best_focus_stat:
+                dominant_rune_type = get_canonical_stat_name(calc_res.best_focus_stat, lang)
+            else:
+                dominant_rune_type = "Mixed"
+
+        # Calculate Features
+        ratio_profit = (rune_value_real / craft_cost) if craft_cost > 0 else 0
+        
+        # Create Prediction Entry (saved=False for automatic submissions)
+        now_dt = datetime.now()
+        
+        normalized_item_type = get_canonical_item_type(item.type or "Unknown", lang)
+        
+        pred_entry = PredictionDataset(
+            item_id=ankama_id,
+            server=server,
+            real_coefficient=request.coefficient,
+            craft_cost=craft_cost,
+            rune_value_real=rune_value_real,
+            ratio_profit=ratio_profit,
+            profit_amount=profit_amount,
+            item_level=item.level,
+            item_type=normalized_item_type,
+            recipe_difficulty=len(item.recipe) if item.recipe else 0,
+            has_high_value_rune=has_high_value_rune,
+            dominant_rune_type=dominant_rune_type,
+            previous_coefficient_24h=previous_coefficient_24h,
+            day_of_week=now_dt.weekday(),
+            hour_of_day=now_dt.hour,
+            days_since_last_update=days_since,
+            saved=False  # Automatic submission - NO manual save
         )
         db.add(pred_entry)
 

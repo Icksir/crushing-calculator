@@ -63,3 +63,6 @@ class PredictionDataset(Base):
     day_of_week = Column(Integer)
     hour_of_day = Column(Integer)
     days_since_last_update = Column(Float)
+    
+    # Tipo de envío
+    saved = Column(Boolean, default=False)  # True para guardados manuales, False para predicciones automáticas

@@ -57,6 +57,23 @@ export const saveItemCoefficient = async (
   }, { params: { lang, server } });
 };
 
+export const submitPredictionData = async (
+  itemId: number, 
+  coefficient: number, 
+  craft_cost: number,
+  rune_value: number,
+  profit: number,
+  lang: string = "es", 
+  server: string = "Dakal"
+) => {
+  await api.post(`/api/items/${itemId}/prediction`, { 
+    coefficient,
+    craft_cost,
+    rune_value,
+    profit
+  }, { params: { lang, server } });
+};
+
 export const getIngredientsByFilter = async (types: string[], minLevel: number, maxLevel: number, lang: string = "es") => {
   const res = await api.get<Ingredient[]>('/api/items/ingredients/filter', {
     params: {
