@@ -27,6 +27,9 @@ services:
       - ENVIRONMENT=${ENVIRONMENT}
       - CORS_ORIGINS=${CORS_ORIGINS}
       - NGINX_PORT=${NGINX_HOST_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     depends_on:
       db:
         condition: service_healthy
