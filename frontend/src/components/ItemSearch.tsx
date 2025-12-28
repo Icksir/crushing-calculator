@@ -20,6 +20,36 @@ export const ItemSearch: React.FC<ItemSearchProps> = ({ onSelect }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { t, language } = useLanguage();
 
+  // Sanitize input to prevent XSS and SQL injection
+  const sanitizeInput = (input: string): string => {
+    // Remove null bytes and other control characters
+    let sanitized = input.replace(/[\x00-\x1F\x7F]/g, '');
+    
+    // Escape HTML entities to prevent XSS
+    sanitized = sanitized
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .replace(/\//g, '&#x2F;');
+    
+    // Remove or escape SQL injection patterns
+    sanitized = sanitized
+      .replace(/;/g, '') // Remove semicolons
+      .replace(/--/g, '') // Remove SQL comments
+      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+      .replace(/union\s+select/i, '') // Remove common SQL injection patterns
+      .replace(/select\s+.*\s+from/i, '')
+      .replace(/drop\s+table/i, '')
+      .replace(/alter\s+table/i, '')
+      .replace(/exec\s+/i, '')
+      .replace(/script\s*>/i, ''); // Remove script tags
+    
+    // Limit length to prevent DoS
+    return sanitized.substring(0, 100);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -42,7 +72,8 @@ export const ItemSearch: React.FC<ItemSearchProps> = ({ onSelect }) => {
       if (query.length >= 2 && query !== lastSelected) {
         setLoading(true);
         try {
-          const data = await searchItems(query, language);
+          const sanitizedQuery = sanitizeInput(query);
+          const data = await searchItems(sanitizedQuery, language);
           setResults(data);
           setIsOpen(true);
         } catch (error) {
