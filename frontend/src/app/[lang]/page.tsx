@@ -414,10 +414,17 @@ const Calculator = () => {
     // Evitar duplicados (convertimos a String para comparar seguro)
     if (String(coeff) === String(lastAutoSentCoeffRef.current)) return;
 
+    // Determinar el coeficiente a enviar
+    let coefficientToSend = Number(coeff);
+    // Si el coeficiente es 100 y no ha sido modificado (es el default), usar el break-even
+    if (coeff === 100 && !coeffChanged) {
+      coefficientToSend = liveMetrics.breakEvenCoeff;
+    }
+
     try {
       await submitPredictionData(
         selectedItem.id, 
-        Number(coeff), 
+        coefficientToSend, 
         cost,
         liveMetrics.totalValue, // Lee directo del estado
         liveMetrics.profit,     // Lee directo del estado
