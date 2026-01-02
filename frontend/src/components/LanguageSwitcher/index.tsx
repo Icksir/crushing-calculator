@@ -14,6 +14,7 @@ const flags: Record<string, string> = {
   es: '🇪🇸',
   en: '🇬🇧',
   fr: '🇫🇷',
+  pt: '🇧🇷',
 };
 
 export const LanguageSwitcher = () => {
@@ -47,6 +48,9 @@ export const LanguageSwitcher = () => {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleLanguageChange('fr')}>
           <span className="mr-2 text-lg">{flags.fr}</span> Français
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleLanguageChange('pt')}>
+          <span className="mr-2 text-lg">{flags.pt}</span> Português
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

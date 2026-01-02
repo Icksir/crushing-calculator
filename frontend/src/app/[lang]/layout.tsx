@@ -25,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
     // ... (Todo tu código de metadata se queda EXACTAMENTE IGUAL) ...
     const { lang } = await params;
-    const supportedLangs = ['es', 'en', 'fr'];
+    const supportedLangs = ['es', 'en', 'fr', 'pt'];
     const currentLang = supportedLangs.includes(lang) ? lang : 'es';
     const t = (key: string) => translations?.[currentLang]?.[key] || key;
 
@@ -36,7 +36,7 @@ export async function generateMetadata({
         icons: { icon: '/logo.svg' },
         alternates: {
             canonical: `./${currentLang}`,
-            languages: { 'en': '/en', 'es': '/es', 'fr': '/fr', 'x-default': '/es' },
+            languages: { 'en': '/en', 'es': '/es', 'fr': '/fr', 'pt': '/pt', 'x-default': '/es' },
         },
         openGraph: {
             title: t('meta_title'),
@@ -44,7 +44,7 @@ export async function generateMetadata({
             url: "https://kamaskope.icksir.com/",
             siteName: "Kamaskope",
             images: [{ url: "https://kamaskope.icksir.com/logo.svg", width: 32, height: 32, alt: t('logo_alt_text') }],
-            locale: currentLang === 'es' ? 'es_ES' : currentLang === 'en' ? 'en_US' : 'fr_FR',
+            locale: currentLang === 'es' ? 'es_ES' : currentLang === 'en' ? 'en_US' : currentLang === 'fr' ? 'fr_FR' : 'pt_BR',
             type: "website",
         },
         twitter: {
@@ -64,7 +64,7 @@ export default async function RootLayout({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
-  const supportedLangs: Language[] = ['es', 'en', 'fr'];
+  const supportedLangs: Language[] = ['es', 'en', 'fr', 'pt'];
   const validLang = supportedLangs.includes(lang as Language) ? (lang as Language) : 'es';
   
   return (

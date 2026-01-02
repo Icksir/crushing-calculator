@@ -1,4 +1,4 @@
-export type Language = 'es' | 'en' | 'fr';
+export type Language = 'es' | 'en' | 'fr' | 'pt';
 
 export const translations: Record<Language, Record<string, string>> = {
   es: {
@@ -339,5 +339,118 @@ export const translations: Record<Language, Record<string, string>> = {
     footer_made_with: 'Fait avec',
     footer_by: 'par',
     footer_ankama_images: 'Les images appartiennent à Ankama.',
+  },
+  pt: {
+    // General
+    calculator: 'Calculadora',
+    rune_prices: 'Preços de Runas',
+    resource_prices: 'Preços de Recursos',
+    level: 'Nível',
+    search_object: 'Procurar item (ex: Nidas)...',
+    no_results: 'Nenhum resultado encontrado.',
+    loading: 'Carregando...',
+    server: 'servidor',
+    language: 'idioma',
+
+    // Calculator Page
+    page_description: 'Ajuste as estatísticas e o preço para calcular o lucro de quebra.',
+    object_cost: 'Custo do Item',
+    coefficient: 'Coeficiente',
+    save_coefficient: 'Salvar Coeficiente',
+    estimated_profit_max: 'Lucro Estimado (Máx)',
+    profit_description: 'Melhor cenário (Sem Foco ou Com Foco) vs. Custo.',
+    max_rune_value: 'Valor das Runas (Máx):',
+    craft_cost: 'Custo de Craft:',
+    min_coefficient: 'Coeficiente Mínimo',
+    no_item_found: 'Nenhum item encontrado. Use a barra de pesquisa para começar.',
+    crushing_calculator_title: 'Calculadora de Quebra',
+    coefficient_history_title: 'Histórico de Coeficiente',
+    whats_new_title: 'Novidades!',
+    whats_new_item_1: 'Interface melhorada para dispositivos móveis',
+    whats_new_item_2: 'Adicionado gráfico para ver variações nos coeficientes',
+
+    // Rune Table
+    characteristic: 'Característica',
+    roll: 'Rolagem',
+    rune: 'Runa',
+    unit_price: 'Preço Unitário',
+    without_focus: 'Sem Foco',
+    with_focus: 'Com Foco',
+    stat: 'Stat',
+    roll_values: 'Mín · Atual · Máx',
+    type: 'Tipo',
+    kamas: 'Kamas',
+    quantity: 'Qtd.',
+    total: 'Total',
+    total_without_focus: 'Total Sem Foco',
+    rune_breakdown: 'Detalhamento de Runas',
+    rune_breakdown_desc: 'Ajuste as rolagens para ver o resultado exato.',
+    
+    // Recipe Editor
+    recipe_cost: 'Custo da Receita',
+    unit_price_placeholder: 'Preço Unit.',
+    total_cost: 'Custo Total',
+
+    // Rune Price Editor
+    rune_prices_title: 'Preços de Runas',
+
+    // Resource Price Editor
+    search_filters: 'Filtros de Pesquisa',
+    profession: 'Profissão',
+    min_level: 'Nível Mínimo',
+    max_level: 'Nível Máximo',
+    load: 'Carregar',
+    force_reload: 'Forçar Recarregamento',
+    search_opportunities: 'Buscar Oportunidades',
+    resources: 'Recursos',
+    save_changes: 'Salvar Alterações',
+    mark_unavailable: 'Marcar como indisponível',
+    mark_available: 'Marcar como disponível',
+    opportunities: 'Oportunidades',
+    analysis_mode: 'Modo Análise',
+    min_cost: 'Custo Mínimo:',
+    sort_by: 'Ordenar por:',
+    profit: 'Lucro',
+    risk: 'Risco',
+    asc: 'Asc',
+    desc: 'Desc',
+    item: 'Item',
+    break_even: 'Ponto de Equilíbrio',
+
+    // Professions
+    Blacksmith: 'Ferreiro',
+    Sculptor: 'Escultor',
+    Jeweler: 'Joalheiro',
+    Shoemaker: 'Sapateiro',
+    Tailor: 'Alfaiate',
+    Manufacturer: 'Fabricante',
+    
+    // Item Types
+    Sword: 'Espada',
+    Dagger: 'Adaga',
+    Hammer: 'Martelo',
+    Shovel: 'Pá',
+    Axe: 'Machado',
+    Scythe: 'Foice',
+    Pickaxe: 'Picareta',
+    Bow: 'Arco',
+    Wand: 'Varinha',
+    Staff: 'Cajado',
+    Amulet: 'Amuleto',
+    Ring: 'Anel',
+    Boots: 'Botas',
+    Belt: 'Cinto',
+    Hat: 'Chapéu',
+    Cloak: 'Capa',
+    Backpack: 'Mochila',
+    Shield: 'Escudo',
+    Trophy: 'Troféu',
+
+    meta_title: "Kamaskope - Calculadora de Runas Dofus e Preços de Forgemagia",
+    meta_description: "Calculadora de runas e preços de forgemagia para Dofus. Otimize seus lucros quebrando itens e gerenciando seus recursos com coeficientes atualizados.",
+    logo_alt_text: "Logo Kamaskope",
+    footer_made_with: 'Feito com',
+    footer_by: 'por',
+    footer_ankama_images: 'As imagens pertencem à Ankama.',
   },
 };

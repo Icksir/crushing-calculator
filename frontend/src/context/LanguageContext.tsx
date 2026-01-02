@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { translations } from "@/constants/translations"; // Ajusta la ruta
 
-export type Language = 'es' | 'en' | 'fr';
+export type Language = 'es' | 'en' | 'fr' | 'pt';
 
 interface LanguageContextType {
   language: Language;

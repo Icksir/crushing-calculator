@@ -120,6 +120,7 @@ const Calculator = () => {
         es: '🇪🇸',
         en: '🇬🇧',
         fr: '🇫🇷',
+        pt: '🇧🇷',
     };
 
     if (!isHydrated) {
@@ -162,6 +163,9 @@ const Calculator = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleLanguageChange('fr')}>
                     <span className="mr-2 text-lg">{flags.fr}</span> Français
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleLanguageChange('pt')}>
+                    <span className="mr-2 text-lg">{flags.pt}</span> Português
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
