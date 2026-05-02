@@ -267,6 +267,13 @@ export const voteSuggestion = async (id: number, vote: 1 | -1): Promise<VoteResp
   return res.data;
 };
 
+export const validateAdminKey = async (adminKey: string) => {
+  const res = await api.post('/api/suggestions/validate', {}, {
+    headers: { 'X-Admin-Key': adminKey }
+  });
+  return res.data;
+};
+
 export const completeSuggestion = async (id: number, adminKey: string) => {
   const res = await api.patch(`/api/suggestions/${id}/complete`, {}, {
     headers: { 'X-Admin-Key': adminKey }
