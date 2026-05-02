@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2, Settings, History } from 'lucide-react';
+import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2, Settings, History, MessageSquare } from 'lucide-react';
 import { ResourcePriceEditor } from '@/components/ResourcePriceEditor';
 import { RunePriceEditor } from '@/components/RunePriceEditor';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -23,6 +23,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChevronDown } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import CoefficientHistoryModal from '@/components/modals/CoefficientHistoryModal';
+import SuggestionModal from '@/components/modals/SuggestionModal';
 import { WhatsNewBanner } from '@/components/WhatsNewBanner';
 import { Footer } from '@/components/Footer';
 
@@ -48,6 +49,7 @@ const Calculator = () => {
   const [visibleRunes, setVisibleRunes] = useState(7);
   const [isHydrated, setIsHydrated] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [coeffChanged, setCoeffChanged] = useState(false);
 
   const runesContainerRef = useRef<HTMLDivElement>(null);
@@ -139,6 +141,11 @@ const Calculator = () => {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowSuggestions(true)}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    {t('suggest_button')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem disabled>
                     <span className="text-sm font-medium text-muted-foreground">{t('server')}</span>
                 </DropdownMenuItem>
@@ -510,8 +517,18 @@ const Calculator = () => {
             </div>
           </div>
 
-          {/* Right: Server and Language Switchers */}
+          {/* Right: Suggest, Server and Language Switchers */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => setShowSuggestions(true)}
+              title={t('suggest_button')}
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden lg:inline text-sm font-medium">{t('suggest_button')}</span>
+            </Button>
             <ServerSwitcher />
             <LanguageSwitcher />
           </div>
@@ -886,6 +903,11 @@ const Calculator = () => {
           server={server}
         />
       )}
+
+      <SuggestionModal
+        isOpen={showSuggestions}
+        onClose={() => setShowSuggestions(false)}
+      />
     </div>
   );
 };

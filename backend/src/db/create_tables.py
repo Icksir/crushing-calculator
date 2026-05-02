@@ -1,6 +1,6 @@
 import asyncio
 from src.db.database import engine, Base
-from src.models.sql_models import PredictionDataset
+from src.models.sql_models import PredictionDataset, SuggestionModel, SuggestionVoteModel, SuggestionCommentModel
 
 async def init_db():
     async with engine.begin() as conn:

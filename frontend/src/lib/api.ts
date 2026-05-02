@@ -225,3 +225,98 @@ export const getMaintenanceStatus = async (): Promise<MaintenanceResponse> => {
   });
   return res.data;
 };
+
+export interface SuggestionComment {
+  id: number;
+  text: string;
+  created_at?: string | null;
+}
+
+export interface SuggestionResponse {
+  id: number;
+  text: string;
+  created_at?: string | null;
+  likes: number;
+  dislikes: number;
+  status: string;
+  user_vote?: number | null;
+  comments: SuggestionComment[];
+}
+
+export interface VoteResponse {
+  status: string;
+  likes: number;
+  dislikes: number;
+  user_vote?: number | null;
+}
+
+export const postSuggestion = async (text: string) => {
+  const res = await api.post('/api/suggestions', { text, website: '' });
+  return res.data;
+};
+
+export const getSuggestions = async (limit: number = 50, offset: number = 0, sort: string = 'newest') => {
+  const res = await api.get<SuggestionResponse[]>('/api/suggestions', {
+    params: { limit, offset, sort }
+  });
+  return res.data;
+};
+
+export const voteSuggestion = async (id: number, vote: 1 | -1): Promise<VoteResponse> => {
+  const res = await api.post(`/api/suggestions/${id}/vote`, { vote });
+  return res.data;
+};
+
+export const completeSuggestion = async (id: number, adminKey: string) => {
+  const res = await api.patch(`/api/suggestions/${id}/complete`, {}, {
+    headers: { 'X-Admin-Key': adminKey }
+  });
+  return res.data;
+};
+
+export const dismissSuggestion = async (id: number, adminKey: string) => {
+  const res = await api.patch(`/api/suggestions/${id}/dismiss`, {}, {
+    headers: { 'X-Admin-Key': adminKey }
+  });
+  return res.data;
+};
+
+export const reopenSuggestion = async (id: number, adminKey: string) => {
+  const res = await api.patch(`/api/suggestions/${id}/reopen`, {}, {
+    headers: { 'X-Admin-Key': adminKey }
+  });
+  return res.data;
+};
+
+export const deleteSuggestion = async (id: number, adminKey: string) => {
+  const res = await api.delete(`/api/suggestions/${id}`, {
+    headers: { 'X-Admin-Key': adminKey }
+  });
+  return res.data;
+};
+
+export const addComment = async (id: number, text: string, adminKey: string) => {
+  const res = await api.post(`/api/suggestions/${id}/comments`, { text }, {
+    headers: { 'X-Admin-Key': adminKey }
+  });
+  return res.data;
+};
+
+export const updateComment = async (suggestionId: number, commentId: number, text: string, adminKey: string) => {
+  const res = await api.patch(`/api/suggestions/${suggestionId}/comments/${commentId}`, { text }, {
+    headers: { 'X-Admin-Key': adminKey }
+  });
+  return res.data;
+};
+
+export const deleteComment = async (suggestionId: number, commentId: number, adminKey: string) => {
+  const res = await api.delete(`/api/suggestions/${suggestionId}/comments/${commentId}`, {
+    headers: { 'X-Admin-Key': adminKey }
+  });
+  return res.data;
+};
+
+export const getComments = async (id: number) => {
+  const res = await api.get<SuggestionComment[]>(`/api/suggestions/${id}/comments`);
+  return res.data;
+};

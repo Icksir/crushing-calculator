@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:8080,https://kamaskope.icksir.com" 
     
+    # Admin
+    suggestions_admin_key: str = ""
+    
     @property
     def cors_origins_list(self) -> list[str]:
         origins = [origin.strip() for origin in self.cors_origins.split(',')]
