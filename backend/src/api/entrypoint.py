@@ -5,6 +5,7 @@ from src.api.items_routes import router as items_routes
 from src.api.prices_routes import router as prices_routes
 from src.api.ocr_routes import router as ocr_routes
 from src.api.status_routes import router as status_routes
+from src.api.suggestions_routes import router as suggestions_routes
 from src.settings.config import env_settings
 import uvicorn
 
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(prices_routes, prefix="/api")
     app.include_router(ocr_routes, prefix="/api")
     app.include_router(status_routes, prefix="/api")
+    app.include_router(suggestions_routes, prefix="/api")
     
     @app.get("/")
     def health_check():
