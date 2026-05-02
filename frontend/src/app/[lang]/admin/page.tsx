@@ -25,6 +25,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   getSuggestions,
+  validateAdminKey,
   completeSuggestion,
   dismissSuggestion,
   reopenSuggestion,
@@ -66,7 +67,7 @@ export default function AdminPage() {
     setAuthLoading(true);
     setAuthError('');
     try {
-      await getSuggestions(1, 0, 'newest');
+      await validateAdminKey(key);
       localStorage.setItem('suggestions_admin_key', key);
       setAdminKey(key);
       setIsAuthenticated(true);
