@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
+import { SafeImage } from '@/components/SafeImage';
 import { Input } from '@/components/ui/input';
 import { Ingredient, getIngredientPrices, updateIngredientPrices, IngredientPriceData } from '@/lib/api';
 import { formatNumber, formatDate } from '@/lib/utils';
@@ -81,15 +81,13 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
             {recipe.map((ing) => (
               <div key={ing.id} className="flex items-center gap-3 group">
                 <div className="relative w-8 h-8 flex-shrink-0 bg-muted rounded-md border border-border/50 overflow-hidden">
-                   {ing.img && (
-                     <Image 
+                   <SafeImage 
                        src={ing.img} 
                        alt={ing.name} 
                        width={32} 
                        height={32} 
                        className="w-full h-full object-contain p-0.5" 
-                     />
-                   )}
+                   />
                    <div className="absolute bottom-0 right-0 bg-black/70 text-white text-[9px] px-1 rounded-tl-sm font-mono">x{ing.quantity}</div>
                 </div>
                 <div className="flex-grow min-w-0">

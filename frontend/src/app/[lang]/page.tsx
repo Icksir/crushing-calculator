@@ -1,10 +1,9 @@
 'use client';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import Image from 'next/image';
 import { ItemSearch } from '@/components/ItemSearch';
 import { RuneTable } from '@/components/RuneTable';
 import { RecipeEditor } from '@/components/RecipeEditor';
-import { RunePriceProvider, useRunePrices } from '@/context/RunePriceContext';
+import { useRunePrices } from '@/context/RunePriceContext';
 import { ItemSearchResponse, ItemStat, CalculateResponse, calculateProfit, getItemDetails, Ingredient, saveItemCoefficient, submitPredictionData } from '@/lib/api';
 import { formatNumber, formatDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,14 +17,14 @@ import { Calculator as CalculatorIcon, Coins, Percent, Save, Loader2, Settings, 
 import { ResourcePriceEditor } from '@/components/ResourcePriceEditor';
 import { RunePriceEditor } from '@/components/RunePriceEditor';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, Language } from '@/context/LanguageContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
 import CoefficientHistoryModal from '@/components/modals/CoefficientHistoryModal';
 import SuggestionModal from '@/components/modals/SuggestionModal';
 import { WhatsNewBanner } from '@/components/WhatsNewBanner';
 import { Footer } from '@/components/Footer';
+import { SafeImage } from '@/components/SafeImage';
 
 const SERVERS = [
   'Dakal', 'Brial', 'Draconiros', 'Hell Mina', 'Imagiro', 'Kourial',
@@ -55,7 +54,7 @@ const Calculator = () => {
   const runesContainerRef = useRef<HTMLDivElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const { runePrices, server, setServer } = useRunePrices();
+  const { runePrices, server, setServer, isLoading } = useRunePrices();
   const { t, language } = useLanguage();
   const prevLanguageRef = useRef(language);
   const lastSavedCoeffRef = useRef<number | ''>(100);
@@ -107,15 +106,17 @@ const Calculator = () => {
   };
 
   const CombinedSwitcher = () => {
-    const pathname = usePathname();
-    const router = useRouter();
+    const { setLanguage } = useLanguage();
 
-    const handleLanguageChange = (newLang: string) => {
-        if (!pathname) return;
-        const segments = pathname.split('/');
+    const handleLanguageChange = (newLang: Language) => {
+        if (typeof window === 'undefined') return;
+        const url = new URL(window.location.href);
+        const segments = url.pathname.split('/');
         segments[1] = newLang;
-        const newPath = segments.join('/');
-        router.push(newPath);
+        url.pathname = segments.join('/');
+        window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+        document.documentElement.lang = newLang;
+        setLanguage(newLang);
     };
 
     const flags: Record<string, string> = {
@@ -181,24 +182,47 @@ const Calculator = () => {
 
   useEffect(() => {
     if (prevLanguageRef.current !== language) {
-      setSelectedItem(null);
-      setStats([]);
-      setRecipe([]);
-      setCost(0);
-      setCoeff(100);
-      setLastCoeffDate(null);
-      setItemLevel(200);
-      setDisplayLevel("200");
-      setResult(null);
-      setLoadingDetails(false);
-      setIsSaving(false);
-      setActiveTab('calculator');
-      lastSavedCoeffRef.current = 100;
-      setCoeffChanged(false);
-      
-      prevLanguageRef.current = language;
+      // Wait for rune prices to finish loading in the new language
+      // before updating stats/recipe to avoid race conditions.
+      if (isLoading) return;
+
+      const fetchTranslatedDetails = async () => {
+        if (selectedItem) {
+          try {
+            setLoadingDetails(true);
+            const details = await getItemDetails(selectedItem.id, language, server);
+            if (details) {
+              setSelectedItem(prev => prev ? { ...prev, name: details.name, img: details.img } : null);
+              setRecipe(details.recipe);
+              setStats(prevStats => {
+                return details.stats.map((newStat, idx) => {
+                  const oldStat = prevStats[idx];
+                  if (oldStat) {
+                    return {
+                      ...newStat,
+                      value: oldStat.value,
+                      max: oldStat.max,
+                    };
+                  }
+                  return {
+                    ...newStat,
+                    max: newStat.max || newStat.min,
+                    value: Math.floor((newStat.min + (newStat.max || newStat.min)) / 2)
+                  };
+                });
+              });
+            }
+          } catch (e) {
+            console.error("Failed to fetch translated details", e);
+          } finally {
+            setLoadingDetails(false);
+          }
+        }
+        prevLanguageRef.current = language;
+      };
+      fetchTranslatedDetails();
     }
-  }, [language]);
+  }, [language, selectedItem, server, isLoading]);
 
   useEffect(() => {
     // Reset calculator state when server changes
@@ -298,7 +322,7 @@ const Calculator = () => {
 
   useEffect(() => {
     const calculate = async () => {
-      if (!selectedItem || stats.length === 0) return;
+      if (!selectedItem || stats.length === 0 || isLoading) return;
       
       try {
         // Transform runePrices to simple Record<string, number> for the backend
@@ -324,7 +348,7 @@ const Calculator = () => {
 
     const timer = setTimeout(calculate, 300);
     return () => clearTimeout(timer);
-  }, [stats, cost, coeff, runePrices, selectedItem, itemLevel, server]);
+  }, [stats, cost, coeff, runePrices, selectedItem, itemLevel, server, language]);
 
   const handleSaveCoefficient = async () => {
     if (!selectedItem || coeff === '') return;
@@ -501,7 +525,7 @@ const Calculator = () => {
           <div className="flex items-center gap-8 flex-1 min-w-0">
             {/* Left: Logo */}
             <div className="flex items-center gap-2 font-bold text-xl text-primary flex-shrink-0">
-              <Image 
+              <SafeImage 
                 src="/logo.svg" 
                 alt="Kamaskope Logo" 
                 width={32} 
@@ -522,7 +546,7 @@ const Calculator = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2"
+              className="gap-2 animate-breathe"
               onClick={() => setShowSuggestions(true)}
               title={t('suggest_button')}
             >
@@ -552,17 +576,14 @@ const Calculator = () => {
             className="hidden md:flex flex-1 items-center justify-end gap-3 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%)]"
           >
             {Object.entries(runePrices)
-              .filter(([name, rune]) => {
-                const n = name.toLowerCase();
-                return (n.includes('rune') || n.includes('runa')) && rune.image_url;
-              })
+              .filter(([name, rune]) => rune.image_url)
               // 4. AUMENTA este número. En lugar de calcularlo, pon un fijo alto (ej. 30 o 40).
               // Al tener overflow-hidden, las que sobren simplemente no se verán, pero el espacio estará lleno.
               .slice(0, 30) 
               .map(([name, rune]) => (
                 // ... (tu código del item sigue igual)
                 <div key={name} className="relative w-8 h-8 opacity-40 hover:opacity-100 transition-opacity cursor-pointer shrink-0" title={name}>
-                  <Image src={rune.image_url!} alt="" fill className="object-contain" sizes="32px"/>
+                  <SafeImage src={rune.image_url} alt="" fill className="object-contain" sizes="32px"/>
                 </div>
               ))}
           </div>
@@ -586,17 +607,14 @@ const Calculator = () => {
                     <div className="relative group">
                       <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
                       <div className="relative bg-card rounded-xl p-2 border shadow-sm">
-                        {selectedItem.img ? (
-                          <Image 
+                        <SafeImage 
                             src={selectedItem.img} 
                             alt={selectedItem.name} 
                             width={100} 
                             height={100} 
                             className="object-contain" 
+                            fallbackClassName="w-[100px] h-[100px]"
                           />
-                        ) : (
-                          <div className="w-[100px] h-[100px] bg-muted rounded-md" />
-                        )}
                       </div>
                     </div>
                     
@@ -913,9 +931,5 @@ const Calculator = () => {
 };
 
 export default function Home() {
-  return (
-    <RunePriceProvider>
-      <Calculator />
-    </RunePriceProvider>
-  );
+  return <Calculator />;
 }
