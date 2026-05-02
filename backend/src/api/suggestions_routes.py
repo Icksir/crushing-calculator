@@ -356,3 +356,60 @@ async def list_comments(
         )
         for item in items
     ]
+
+
+@router.patch("/suggestions/{suggestion_id}/comments/{comment_id}", response_model=dict)
+async def update_comment(
+    suggestion_id: int,
+    comment_id: int,
+    data: dict,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    db: AsyncSession = Depends(get_db)
+):
+    if not env_settings.suggestions_admin_key or x_admin_key != env_settings.suggestions_admin_key:
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    text = data.get("text", "").strip()
+    if not text or len(text) > 500:
+        raise HTTPException(status_code=400, detail="invalid_comment")
+
+    result = await db.execute(
+        select(SuggestionCommentModel).where(
+            SuggestionCommentModel.id == comment_id,
+            SuggestionCommentModel.suggestion_id == suggestion_id
+        )
+    )
+    comment = result.scalar_one_or_none()
+    if not comment:
+        raise HTTPException(status_code=404, detail="not_found")
+
+    comment.text = text
+    await db.commit()
+
+    return {"status": "ok"}
+
+
+@router.delete("/suggestions/{suggestion_id}/comments/{comment_id}", response_model=dict)
+async def delete_comment(
+    suggestion_id: int,
+    comment_id: int,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    db: AsyncSession = Depends(get_db)
+):
+    if not env_settings.suggestions_admin_key or x_admin_key != env_settings.suggestions_admin_key:
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    result = await db.execute(
+        select(SuggestionCommentModel).where(
+            SuggestionCommentModel.id == comment_id,
+            SuggestionCommentModel.suggestion_id == suggestion_id
+        )
+    )
+    comment = result.scalar_one_or_none()
+    if not comment:
+        raise HTTPException(status_code=404, detail="not_found")
+
+    await db.delete(comment)
+    await db.commit()
+
+    return {"status": "ok"}
