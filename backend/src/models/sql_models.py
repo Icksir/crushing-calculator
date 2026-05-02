@@ -1,6 +1,29 @@
-from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime
+from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, UniqueConstraint
 from sqlalchemy.sql import func
 from src.db.database import Base
+
+class SuggestionModel(Base):
+    __tablename__ = "suggestions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    text = Column(String(500), nullable=False)
+    ip_hash = Column(String(64), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    likes = Column(Integer, default=0)
+    dislikes = Column(Integer, default=0)
+    status = Column(String, default="open")
+
+class SuggestionVoteModel(Base):
+    __tablename__ = "suggestion_votes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    suggestion_id = Column(Integer, nullable=False, index=True)
+    ip_hash = Column(String(64), nullable=False)
+    vote_type = Column(Integer, nullable=False)  # 1 = like, -1 = dislike
+
+    __table_args__ = (
+        UniqueConstraint("suggestion_id", "ip_hash", name="uq_suggestion_ip"),
+    )
 
 class RunePriceModel(Base):
     __tablename__ = "rune_prices"
