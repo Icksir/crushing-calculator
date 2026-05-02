@@ -8,8 +8,8 @@ from sqlalchemy import func as sa_func
 from typing import List, Optional
 
 from src.db.database import get_db
-from src.models.sql_models import SuggestionModel, SuggestionVoteModel
-from src.models.schemas import SuggestionCreate, SuggestionResponse, VoteCreate
+from src.models.sql_models import SuggestionModel, SuggestionVoteModel, SuggestionCommentModel
+from src.models.schemas import SuggestionCreate, SuggestionResponse, VoteCreate, SuggestionCommentResponse
 from src.settings.config import env_settings
 
 router = APIRouter(tags=['suggestions'])
@@ -27,6 +27,28 @@ def get_ip_hash(request: Request) -> str:
     else:
         ip = request.client.host if request.client else "unknown"
     return hashlib.sha256(ip.encode()).hexdigest()
+
+
+async def _get_comments_for_suggestions(db: AsyncSession, suggestion_ids: List[int]) -> dict:
+    if not suggestion_ids:
+        return {}
+    result = await db.execute(
+        select(SuggestionCommentModel)
+        .where(SuggestionCommentModel.suggestion_id.in_(suggestion_ids))
+        .order_by(SuggestionCommentModel.created_at.asc())
+    )
+    comments_by_id = {}
+    for comment in result.scalars().all():
+        if comment.suggestion_id not in comments_by_id:
+            comments_by_id[comment.suggestion_id] = []
+        comments_by_id[comment.suggestion_id].append(
+            SuggestionCommentResponse(
+                id=comment.id,
+                text=comment.text,
+                created_at=comment.created_at
+            )
+        )
+    return comments_by_id
 
 
 @router.post("/suggestions", response_model=dict)
@@ -86,7 +108,7 @@ async def list_suggestions(
     )
 
     query = select(SuggestionModel).order_by(order_clause)
-    if status in ("open", "completed"):
+    if status in ("open", "completed", "dismissed"):
         query = query.where(SuggestionModel.status == status)
 
     result = await db.execute(query.limit(limit).offset(offset))
@@ -105,6 +127,9 @@ async def list_suggestions(
         for vote in vote_result.scalars().all():
             user_votes[vote.suggestion_id] = vote.vote_type
 
+    # Fetch comments for these suggestions
+    comments_by_id = await _get_comments_for_suggestions(db, suggestion_ids)
+
     return [
         SuggestionResponse(
             id=item.id,
@@ -113,7 +138,8 @@ async def list_suggestions(
             likes=item.likes,
             dislikes=item.dislikes,
             status=item.status,
-            user_vote=user_votes.get(item.id)
+            user_vote=user_votes.get(item.id),
+            comments=comments_by_id.get(item.id, [])
         )
         for item in items
     ]
@@ -131,7 +157,6 @@ async def vote_suggestion(
 
     ip_hash = get_ip_hash(request)
 
-    # Check if suggestion exists
     result = await db.execute(
         select(SuggestionModel).where(SuggestionModel.id == suggestion_id)
     )
@@ -139,7 +164,6 @@ async def vote_suggestion(
     if not suggestion:
         raise HTTPException(status_code=404, detail="not_found")
 
-    # Check existing vote
     result = await db.execute(
         select(SuggestionVoteModel).where(
             SuggestionVoteModel.suggestion_id == suggestion_id,
@@ -150,14 +174,12 @@ async def vote_suggestion(
 
     if existing:
         if existing.vote_type == data.vote:
-            # Same vote -> remove it (toggle off)
             await db.delete(existing)
             if data.vote == 1:
                 suggestion.likes = max(0, suggestion.likes - 1)
             else:
                 suggestion.dislikes = max(0, suggestion.dislikes - 1)
         else:
-            # Different vote -> change it
             old_vote = existing.vote_type
             existing.vote_type = data.vote
             if old_vote == 1:
@@ -167,7 +189,6 @@ async def vote_suggestion(
                 suggestion.dislikes = max(0, suggestion.dislikes - 1)
                 suggestion.likes += 1
     else:
-        # New vote
         vote = SuggestionVoteModel(
             suggestion_id=suggestion_id,
             ip_hash=ip_hash,
@@ -211,6 +232,28 @@ async def complete_suggestion(
     return {"status": "ok"}
 
 
+@router.patch("/suggestions/{suggestion_id}/dismiss", response_model=dict)
+async def dismiss_suggestion(
+    suggestion_id: int,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    db: AsyncSession = Depends(get_db)
+):
+    if not env_settings.suggestions_admin_key or x_admin_key != env_settings.suggestions_admin_key:
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    result = await db.execute(
+        select(SuggestionModel).where(SuggestionModel.id == suggestion_id)
+    )
+    suggestion = result.scalar_one_or_none()
+    if not suggestion:
+        raise HTTPException(status_code=404, detail="not_found")
+
+    suggestion.status = "dismissed"
+    await db.commit()
+
+    return {"status": "ok"}
+
+
 @router.patch("/suggestions/{suggestion_id}/reopen", response_model=dict)
 async def reopen_suggestion(
     suggestion_id: int,
@@ -249,11 +292,67 @@ async def delete_suggestion(
     if not suggestion:
         raise HTTPException(status_code=404, detail="not_found")
 
+    # Delete votes and comments in cascade
     await db.execute(
         select(SuggestionVoteModel).where(SuggestionVoteModel.suggestion_id == suggestion_id)
+    )
+    await db.execute(
+        select(SuggestionCommentModel).where(SuggestionCommentModel.suggestion_id == suggestion_id)
     )
 
     await db.delete(suggestion)
     await db.commit()
 
     return {"status": "ok"}
+
+
+@router.post("/suggestions/{suggestion_id}/comments", response_model=dict)
+async def add_comment(
+    suggestion_id: int,
+    data: dict,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    db: AsyncSession = Depends(get_db)
+):
+    if not env_settings.suggestions_admin_key or x_admin_key != env_settings.suggestions_admin_key:
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    text = data.get("text", "").strip()
+    if not text or len(text) > 500:
+        raise HTTPException(status_code=400, detail="invalid_comment")
+
+    result = await db.execute(
+        select(SuggestionModel).where(SuggestionModel.id == suggestion_id)
+    )
+    suggestion = result.scalar_one_or_none()
+    if not suggestion:
+        raise HTTPException(status_code=404, detail="not_found")
+
+    comment = SuggestionCommentModel(
+        suggestion_id=suggestion_id,
+        text=text
+    )
+    db.add(comment)
+    await db.commit()
+
+    return {"status": "ok"}
+
+
+@router.get("/suggestions/{suggestion_id}/comments", response_model=List[SuggestionCommentResponse])
+async def list_comments(
+    suggestion_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(SuggestionCommentModel)
+        .where(SuggestionCommentModel.suggestion_id == suggestion_id)
+        .order_by(SuggestionCommentModel.created_at.asc())
+    )
+    items = result.scalars().all()
+    return [
+        SuggestionCommentResponse(
+            id=item.id,
+            text=item.text,
+            created_at=item.created_at
+        )
+        for item in items
+    ]
