@@ -1,12 +1,13 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { X, Send, MessageSquare, Loader2, ThumbsUp, ThumbsDown, CheckCircle } from 'lucide-react';
+import { X, Send, MessageSquare, Loader2, ThumbsUp, ThumbsDown, CheckCircle, XCircle, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/context/LanguageContext';
 import { postSuggestion, getSuggestions, voteSuggestion, SuggestionResponse } from '@/lib/api';
+import { formatShortDate } from '@/lib/utils';
 
 interface SuggestionModalProps {
   isOpen: boolean;
@@ -32,6 +33,12 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose }) =>
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen) {
+      fetchSuggestions();
+    }
+  }, [sort]);
+
   const fetchSuggestions = async () => {
     setLoadingList(true);
     try {
@@ -43,12 +50,6 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose }) =>
       setLoadingList(false);
     }
   };
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchSuggestions();
-    }
-  }, [sort]);
 
   const handleSubmit = async () => {
     setError('');
@@ -101,6 +102,8 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose }) =>
     }
   };
 
+  const isResolved = (status: string) => status === 'completed' || status === 'dismissed';
+
   if (!isOpen) return null;
 
   return (
@@ -142,9 +145,10 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose }) =>
               readOnly
             />
             <div className="flex items-center justify-between">
-              <div className="text-xs">
-                {success && <span className="text-green-600 dark:text-green-400">{t('suggest_success')}</span>}
-                {error && <span className="text-red-600 dark:text-red-400">{error}</span>}
+              <div className="text-xs space-y-0.5">
+                {success && <span className="text-green-600 dark:text-green-400 block">{t('suggest_success')}</span>}
+                {error && <span className="text-red-600 dark:text-red-400 block">{error}</span>}
+                <span className="text-muted-foreground">{t('suggest_limit_hint')}</span>
               </div>
               <Button
                 onClick={handleSubmit}
@@ -196,17 +200,45 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose }) =>
                   {suggestions.map((s) => (
                     <div
                       key={s.id}
-                      className={`rounded-lg border bg-card p-3 text-sm shadow-sm ${s.status === 'completed' ? 'opacity-60' : ''}`}
+                      className={`rounded-lg border bg-card p-3 text-sm shadow-sm ${isResolved(s.status) ? 'opacity-60' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="whitespace-pre-wrap break-words flex-1">{s.text}</p>
+                        <p className={`whitespace-pre-wrap break-words flex-1 ${s.status === 'dismissed' ? 'line-through text-muted-foreground' : ''}`}>
+                          {s.text}
+                        </p>
                         {s.status === 'completed' && (
-                          <Badge variant="outline" className="shrink-0 gap-1 text-xs">
+                          <Badge variant="outline" className="shrink-0 gap-1 text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
                             <CheckCircle className="h-3 w-3" />
                             {t('suggest_completed')}
                           </Badge>
                         )}
+                        {s.status === 'dismissed' && (
+                          <Badge variant="outline" className="shrink-0 gap-1 text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
+                            <XCircle className="h-3 w-3" />
+                            {t('suggest_dismissed')}
+                          </Badge>
+                        )}
                       </div>
+
+                      {/* Comments */}
+                      {s.comments && s.comments.length > 0 && (
+                        <div className="mt-2 space-y-1.5">
+                          {s.comments.map((c) => (
+                            <div key={c.id} className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-md px-2 py-1.5">
+                              <MessageCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                              <div>
+                                <span className="whitespace-pre-wrap break-words">{c.text}</span>
+                                {c.created_at && (
+                                  <span className="text-[10px] text-muted-foreground/70 ml-1">
+                                    {formatShortDate(c.created_at)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-1">
                           <Button
@@ -214,7 +246,7 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose }) =>
                             size="icon"
                             className="h-7 w-7"
                             onClick={() => handleVote(s.id, 1)}
-                            disabled={s.status === 'completed'}
+                            disabled={isResolved(s.status)}
                           >
                             <ThumbsUp className="h-3.5 w-3.5" />
                           </Button>
@@ -224,7 +256,7 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose }) =>
                             size="icon"
                             className="h-7 w-7"
                             onClick={() => handleVote(s.id, -1)}
-                            disabled={s.status === 'completed'}
+                            disabled={isResolved(s.status)}
                           >
                             <ThumbsDown className="h-3.5 w-3.5" />
                           </Button>
@@ -232,7 +264,7 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose }) =>
                         </div>
                         {s.created_at && (
                           <span className="text-xs text-muted-foreground">
-                            {new Date(s.created_at).toLocaleDateString()}
+                            {formatShortDate(s.created_at)}
                           </span>
                         )}
                       </div>

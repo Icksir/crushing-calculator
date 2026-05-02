@@ -12,6 +12,10 @@ import {
   Trash2,
   Loader2,
   ArrowLeft,
+  XCircle,
+  MessageCircle,
+  Send,
+  Pencil,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,10 +26,15 @@ import { useLanguage } from '@/context/LanguageContext';
 import {
   getSuggestions,
   completeSuggestion,
+  dismissSuggestion,
   reopenSuggestion,
   deleteSuggestion,
+  addComment,
+  updateComment,
+  deleteComment,
   SuggestionResponse,
 } from '@/lib/api';
+import { formatShortDate } from '@/lib/utils';
 
 export default function AdminPage() {
   const { t } = useLanguage();
@@ -39,11 +48,13 @@ export default function AdminPage() {
 
   const [suggestions, setSuggestions] = useState<SuggestionResponse[]>([]);
   const [loading, setLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'completed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'completed' | 'dismissed'>('all');
   const [sort, setSort] = useState<'newest' | 'top'>('newest');
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState<Record<number, string>>({});
+  const [editingComment, setEditingComment] = useState<{ suggestionId: number; commentId: number } | null>(null);
+  const [editCommentText, setEditCommentText] = useState('');
 
-  // Try to restore key from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('suggestions_admin_key');
     if (stored) {
@@ -55,12 +66,7 @@ export default function AdminPage() {
     setAuthLoading(true);
     setAuthError('');
     try {
-      // Validate by making a test admin request
       await getSuggestions(1, 0, 'newest');
-      // If we get here, the backend is reachable. For a real validation,
-      // we attempt an admin-only operation on a non-existent ID which should
-      // return 404 (valid key) rather than 403 (invalid key).
-      // Simpler: just trust the key for now and let operations fail with 403 if wrong.
       localStorage.setItem('suggestions_admin_key', key);
       setAdminKey(key);
       setIsAuthenticated(true);
@@ -88,7 +94,6 @@ export default function AdminPage() {
       }
       setSuggestions(filtered);
     } catch (err: any) {
-      // Only invalidate session on 403 (invalid key)
       if (err.response?.status === 403) {
         setIsAuthenticated(false);
         localStorage.removeItem('suggestions_admin_key');
@@ -104,7 +109,7 @@ export default function AdminPage() {
     }
   }, [isAuthenticated, statusFilter, sort]);
 
-  const handleAction = async (action: 'complete' | 'reopen' | 'delete', id: number) => {
+  const handleAction = async (action: 'complete' | 'dismiss' | 'reopen' | 'delete', id: number) => {
     const key = localStorage.getItem('suggestions_admin_key');
     if (!key) {
       setIsAuthenticated(false);
@@ -112,11 +117,68 @@ export default function AdminPage() {
     }
     try {
       if (action === 'complete') await completeSuggestion(id, key);
+      if (action === 'dismiss') await dismissSuggestion(id, key);
       if (action === 'reopen') await reopenSuggestion(id, key);
       if (action === 'delete') {
         await deleteSuggestion(id, key);
         setDeleteConfirm(null);
       }
+      await fetchSuggestions();
+    } catch (err: any) {
+      if (err.response?.status === 403) {
+        setIsAuthenticated(false);
+        localStorage.removeItem('suggestions_admin_key');
+      }
+    }
+  };
+
+  const handleAddComment = async (id: number) => {
+    const key = localStorage.getItem('suggestions_admin_key');
+    const text = commentText[id]?.trim();
+    if (!key || !text) return;
+    try {
+      await addComment(id, text, key);
+      setCommentText(prev => ({ ...prev, [id]: '' }));
+      await fetchSuggestions();
+    } catch (err: any) {
+      if (err.response?.status === 403) {
+        setIsAuthenticated(false);
+        localStorage.removeItem('suggestions_admin_key');
+      }
+    }
+  };
+
+  const startEditComment = (suggestionId: number, commentId: number, currentText: string) => {
+    setEditingComment({ suggestionId, commentId });
+    setEditCommentText(currentText);
+  };
+
+  const handleUpdateComment = async () => {
+    if (!editingComment) return;
+    const key = localStorage.getItem('suggestions_admin_key');
+    const text = editCommentText.trim();
+    if (!key || !text) return;
+    try {
+      await updateComment(editingComment.suggestionId, editingComment.commentId, text, key);
+      setEditingComment(null);
+      setEditCommentText('');
+      await fetchSuggestions();
+    } catch (err: any) {
+      if (err.response?.status === 403) {
+        setIsAuthenticated(false);
+        localStorage.removeItem('suggestions_admin_key');
+      }
+    }
+  };
+
+  const handleDeleteComment = async (suggestionId: number, commentId: number) => {
+    const key = localStorage.getItem('suggestions_admin_key');
+    if (!key) {
+      setIsAuthenticated(false);
+      return;
+    }
+    try {
+      await deleteComment(suggestionId, commentId, key);
       await fetchSuggestions();
     } catch (err: any) {
       if (err.response?.status === 403) {
@@ -190,7 +252,7 @@ export default function AdminPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-1">
-            {(['all', 'open', 'completed'] as const).map((f) => (
+            {(['all', 'open', 'completed', 'dismissed'] as const).map((f) => (
               <Button
                 key={f}
                 variant={statusFilter === f ? 'secondary' : 'ghost'}
@@ -232,11 +294,11 @@ export default function AdminPage() {
                 suggestions.map((s) => (
                   <div
                     key={s.id}
-                    className={`p-4 flex flex-col gap-2 ${s.status === 'completed' ? 'bg-muted/30' : ''}`}
+                    className={`p-4 flex flex-col gap-2 ${s.status !== 'open' ? 'bg-muted/30' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${s.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                        <p className={`text-sm ${s.status === 'dismissed' ? 'line-through text-muted-foreground' : s.status === 'completed' ? 'text-muted-foreground' : ''}`}>
                           {s.text}
                         </p>
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
@@ -249,22 +311,121 @@ export default function AdminPage() {
                             {s.dislikes}
                           </span>
                           <span>
-                            {s.created_at ? new Date(s.created_at).toLocaleString() : ''}
+                            {s.created_at ? formatShortDate(s.created_at) : ''}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        {s.status === 'completed' ? (
-                          <Badge variant="outline" className="gap-1 text-xs">
+                        {s.status === 'completed' && (
+                          <Badge variant="outline" className="gap-1 text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
                             <CheckCircle className="h-3 w-3" />
                             {t('suggest_completed')}
                           </Badge>
-                        ) : (
+                        )}
+                        {s.status === 'dismissed' && (
+                          <Badge variant="outline" className="gap-1 text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
+                            <XCircle className="h-3 w-3" />
+                            {t('suggest_dismissed')}
+                          </Badge>
+                        )}
+                        {s.status === 'open' && (
                           <Badge variant="secondary" className="text-xs">
                             {t('admin_status_open')}
                           </Badge>
                         )}
                       </div>
+                    </div>
+
+                    {/* Existing comments */}
+                    {s.comments && s.comments.length > 0 && (
+                      <div className="space-y-1.5">
+                        {s.comments.map((c) => (
+                          <div key={c.id} className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-md px-2 py-1.5">
+                            <MessageCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              {editingComment?.suggestionId === s.id && editingComment?.commentId === c.id ? (
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    value={editCommentText}
+                                    onChange={(e) => setEditCommentText(e.target.value)}
+                                    className="h-6 text-xs"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleUpdateComment()}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-[10px] px-1"
+                                    onClick={handleUpdateComment}
+                                  >
+                                    Guardar
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-[10px] px-1"
+                                    onClick={() => { setEditingComment(null); setEditCommentText(''); }}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-start justify-between gap-2">
+                                  <span className="whitespace-pre-wrap break-words">{c.text}</span>
+                                  <div className="flex items-center gap-0.5 shrink-0">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5"
+                                      onClick={() => startEditComment(s.id, c.id, c.text)}
+                                    >
+                                      <Pencil className="h-2.5 w-2.5" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5 text-red-600 hover:text-red-700"
+                                      onClick={() => handleDeleteComment(s.id, c.id)}
+                                    >
+                                      <Trash2 className="h-2.5 w-2.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                              {c.created_at && (
+                                <span className="text-[10px] text-muted-foreground/70 block">
+                                  {formatShortDate(c.created_at)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add comment */}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder={t('admin_comment_placeholder')}
+                        value={commentText[s.id] || ''}
+                        onChange={(e) => setCommentText(prev => ({ ...prev, [s.id]: e.target.value }))}
+                        className="h-7 text-xs"
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment(s.id)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs gap-1 shrink-0"
+                        onClick={() => handleAddComment(s.id)}
+                        disabled={!commentText[s.id]?.trim()}
+                      >
+                        <Send className="h-3 w-3" />
+                        {t('admin_add_comment')}
+                      </Button>
                     </div>
 
                     {/* Actions */}
@@ -281,7 +442,19 @@ export default function AdminPage() {
                           {t('admin_action_complete')}
                         </Button>
                       )}
-                      {s.status === 'completed' && (
+                      {s.status !== 'dismissed' && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                          onClick={() => handleAction('dismiss', s.id)}
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                          {t('admin_action_dismiss')}
+                        </Button>
+                      )}
+                      {s.status !== 'open' && (
                         <Button
                           type="button"
                           variant="ghost"
