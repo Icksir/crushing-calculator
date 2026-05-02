@@ -65,16 +65,16 @@ docker image prune -f
 # Build and start services
 if [ "$REBUILD_BACKEND" = true ] && [ "$REBUILD_FRONTEND" = true ]; then
     print_status "Rebuilding backend and frontend..."
-    docker compose up -d --build
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 elif [ "$REBUILD_BACKEND" = true ]; then
     print_status "Rebuilding only backend..."
-    docker compose up -d --build backend
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build backend
 elif [ "$REBUILD_FRONTEND" = true ]; then
     print_status "Rebuilding only frontend..."
-    docker compose up -d --build frontend
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build frontend
 else
     print_status "No rebuilds needed, starting services..."
-    docker compose up -d
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 fi
 
 # Wait a bit for services to start
