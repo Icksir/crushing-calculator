@@ -413,3 +413,12 @@ async def delete_comment(
     await db.commit()
 
     return {"status": "ok"}
+
+
+@router.post("/suggestions/validate", response_model=dict)
+async def validate_admin_key(
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")
+):
+    if not env_settings.suggestions_admin_key or x_admin_key != env_settings.suggestions_admin_key:
+        raise HTTPException(status_code=403, detail="forbidden")
+    return {"status": "ok", "valid": True}
