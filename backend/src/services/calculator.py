@@ -145,7 +145,8 @@ async def buscar_y_obtener_imagen(nombre_runa: str, client: httpx.AsyncClient = 
 
         # --- MODIFICATION: Filter for actual runes ---
         # The API search can be fuzzy. We need to ensure we're getting a rune.
-        runa_keyword = "rune" if lang != "es" else "runa"
+        runa_keywords = {"es": "runa", "en": "rune", "fr": "rune", "pt": "runa"}
+        runa_keyword = runa_keywords.get(lang, "rune")
         
         mejor_coincidencia = None
         

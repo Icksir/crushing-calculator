@@ -7,6 +7,8 @@ from src.api.ocr_routes import router as ocr_routes
 from src.api.status_routes import router as status_routes
 from src.api.suggestions_routes import router as suggestions_routes
 from src.settings.config import env_settings
+from src.db.database import get_db_session
+from src.api.prices_routes import sync_rune_images
 import uvicorn
 
 app = FastAPI()
@@ -41,6 +43,16 @@ def create_app() -> FastAPI:
     @app.get("/api/health")
     def api_health_check():
         return {"status": "ok", "message": "API is accessible"}
+
+    @app.on_event("startup")
+    async def startup_event():
+        print("🚀 Running startup tasks...")
+        try:
+            async with get_db_session() as db:
+                result = await sync_rune_images(None, server="Dakal", db=db)
+                print(f"  Images synced: {result}")
+        except Exception as e:
+            print(f"  ⚠️ Startup image sync failed: {e}")
 
     return app
 
