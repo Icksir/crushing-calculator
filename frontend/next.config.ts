@@ -15,10 +15,11 @@ const nextConfig: NextConfig = {
   },
   
   async rewrites() {
+    const apiProxyTarget = process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:8000/api/:path*',
+        destination: `${apiProxyTarget}/api/:path*`,
       },
     ];
   },

@@ -10,6 +10,24 @@ COPY package.json package-lock.json* ./
 # Install dependencies
 RUN npm ci # Este era install
 
+# Development stage with hot reload
+FROM base AS dev
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV development
+
+EXPOSE 3000
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["npm", "run", "dev"]
+
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
