@@ -51,4 +51,3 @@ Thumbs.db
 config/status.json
 
 # Docker
-docker-compose.override.yml

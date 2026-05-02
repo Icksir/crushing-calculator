@@ -36,9 +36,6 @@ services:
     volumes:
       - ./backend/config:/app/config
     restart: always
-    networks:
-      - default      # Para hablar con la DB
-      - web_network  # Para que el Nginx Global lo vea
 
   frontend:
     build:
@@ -52,12 +49,8 @@ services:
     depends_on:
       - backend
     restart: always
-    networks:
-      - web_network # Para que el Nginx Global lo vea
 
 networks:
-  web_network:
-    external: true
   default:
     driver: bridge
 
