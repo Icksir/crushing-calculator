@@ -25,6 +25,14 @@ class SuggestionVoteModel(Base):
         UniqueConstraint("suggestion_id", "ip_hash", name="uq_suggestion_ip"),
     )
 
+class SuggestionCommentModel(Base):
+    __tablename__ = "suggestion_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    suggestion_id = Column(Integer, nullable=False, index=True)
+    text = Column(String(500), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 class RunePriceModel(Base):
     __tablename__ = "rune_prices"
 

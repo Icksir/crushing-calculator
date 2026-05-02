@@ -95,6 +95,11 @@ class SuggestionCreate(BaseModel):
 class VoteCreate(BaseModel):
     vote: int  # 1 = like, -1 = dislike
 
+class SuggestionCommentResponse(BaseModel):
+    id: int
+    text: str
+    created_at: Optional[datetime] = None
+
 class SuggestionResponse(BaseModel):
     id: int
     text: str
@@ -103,3 +108,4 @@ class SuggestionResponse(BaseModel):
     dislikes: int = 0
     status: str = "open"
     user_vote: Optional[int] = None  # 1, -1, or None
+    comments: List[SuggestionCommentResponse] = []
