@@ -1,0 +1,13 @@
+services:
+  backend:
+    networks:
+      - default
+      - web_network
+
+  frontend:
+    networks:
+      - web_network
+
+networks:
+  web_network:
+    external: true

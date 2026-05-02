@@ -7,7 +7,7 @@ echo "🔄 Updating application..."
 git pull origin main
 
 echo "🔄 Restarting services..."
-docker compose down
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 echo "✅ Update complete!"
