@@ -57,12 +57,24 @@ Microservices architecture containerized with Docker for isolation and scalabili
 
 ## 🚀 Installation and Deployment
 
-**Remember to start a database and instantiate the .env file**
+**Remember to instantiate the `.env` file** (copy from `.example.env`).
 
-Run:
+### Development (local machine)
 
-```Bash
+Uses `docker-compose.override.yml` (merged automatically). Includes hot reload, source volumes, and a local Nginx on `localhost:8080`.
+
+```bash
+# Set ENVIRONMENT=development in .env
 docker compose up -d --build
+```
+
+Access at: **http://localhost:8080**
+
+### Production (server)
+
+```bash
+# Set ENVIRONMENT=production in .env
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 ## 📄 License
