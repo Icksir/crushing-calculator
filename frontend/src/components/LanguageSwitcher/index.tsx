@@ -1,8 +1,7 @@
 'use client';
 import React from 'react';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage, Language } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { usePathname, useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,18 +17,19 @@ const flags: Record<string, string> = {
 };
 
 export const LanguageSwitcher = () => {
-  const { language } = useLanguage();
-  const pathname = usePathname();
-  const router = useRouter();
+  const { language, setLanguage } = useLanguage();
 
-  const handleLanguageChange = (newLang: string) => {
-    if (!pathname) return;
-    const segments = pathname.split('/');
+  const handleLanguageChange = (newLang: Language) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const segments = url.pathname.split('/');
     // segments[0] is empty string because path starts with /
     // segments[1] is the locale
     segments[1] = newLang;
-    const newPath = segments.join('/');
-    router.push(newPath);
+    url.pathname = segments.join('/');
+    window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    document.documentElement.lang = newLang;
+    setLanguage(newLang);
   };
 
   return (

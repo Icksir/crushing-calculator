@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { SafeImage } from '@/components/SafeImage';
 import { Input } from '@/components/ui/input';
 import { ItemStat, RuneBreakdown } from '@/lib/api';
 import { useRunePrices } from '@/context/RunePriceContext';
@@ -109,7 +109,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-3">
                     <div className="relative w-8 h-8 flex items-center justify-center bg-muted/50 rounded-md border border-border/50">
-                      {result?.rune_image ? <Image src={result.rune_image} alt="" width={24} height={24} className="object-contain" /> : <div className="w-4 h-4 bg-muted-foreground/20 rounded-full" />}
+                      <SafeImage src={result?.rune_image} alt="" width={24} height={24} className="object-contain" fallbackClassName="w-4 h-4 rounded-full" />
                     </div>
                     <div>
                       <h3 className="font-bold capitalize">{stat.name}</h3>
@@ -249,17 +249,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
               <TableCell>
                 <div className="flex items-center gap-3">
                    <div className="relative w-8 h-8 flex items-center justify-center bg-muted/50 rounded-md border border-border/50">
-                     {result?.rune_image ? (
-                       <Image 
-                         src={result.rune_image} 
-                         alt="" 
-                         width={24} 
-                         height={24} 
-                         className="object-contain" 
-                       />
-                     ) : (
-                       <div className="w-4 h-4 bg-muted-foreground/20 rounded-full" />
-                     )}
+<SafeImage src={result?.rune_image} alt="" width={24} height={24} className="object-contain" fallbackClassName="w-4 h-4 rounded-full" />
                    </div>
                    <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                      {result?.rune_name || stat.rune_name || `${t('rune')} ${stat.name.substring(0,3)}`}
@@ -374,7 +364,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({ stats, breakdown, onStatCh
                 <div className="flex items-center justify-end gap-2">
                     {result?.focus_image && result.focus_rune_name !== result.rune_name && (
                         <div className="w-5 h-5 relative" title={result.focus_rune_name}>
-                          <Image 
+                          <SafeImage 
                             src={result.focus_image} 
                             alt={result.focus_rune_name} 
                             fill

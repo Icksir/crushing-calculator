@@ -71,6 +71,18 @@ async def get_rune_prices(lang: str = "es", server: str = "Dakal", db: AsyncSess
             if rune.rune_name not in image_dict:
                 image_dict[rune.rune_name] = rune.image_url
     
+    # --- NEW: Lazy-load images for runes that don't have them ---
+    runes_needing_images = [rune for rune in runes if not rune.image_url and not image_dict.get(rune.rune_name)]
+    if runes_needing_images:
+        print(f"🖼️ Fetching {len(runes_needing_images)} missing images for {server}...")
+        for rune in runes_needing_images:
+            url = await buscar_y_obtener_imagen(rune.rune_name, lang="es")
+            if url:
+                rune.image_url = url
+                image_dict[rune.rune_name] = url
+                print(f"  ✓ {rune.rune_name}: {url}")
+        await db.commit()
+    
     return {
         get_rune_name_translation(rune.rune_name, lang): RunePriceResponse(
             price=rune.price, 
@@ -88,7 +100,7 @@ async def fetch_rune_images_task(db: AsyncSession):
 
 
 @router.post("/prices/runes/sync-images")
-async def sync_rune_images(background_tasks: BackgroundTasks, server: str = "Dakal", db: AsyncSession = Depends(get_db)):
+async def sync_rune_images(background_tasks: BackgroundTasks = None, server: str = "Dakal", db: AsyncSession = Depends(get_db)):
     # --- NEW: Get all valid Spanish rune names from RUNE_DB ---
     valid_rune_names_es = {
         data["name"]["es"]

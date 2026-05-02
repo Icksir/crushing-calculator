@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Ingredient, getIngredientsByFilter, getIngredientPrices, updateIngredientPrices, ProfitItem, getBestProfitItems, IngredientPriceData } from '@/lib/api';
 import { Loader2, Save, Filter, Calculator, RefreshCw, Ban, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
-import Image from 'next/image';
+import { SafeImage } from '@/components/SafeImage';
 import { Switch } from '@/components/ui/switch';
 import { formatNumber, formatDate } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -239,14 +239,12 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                     {resources.map(resource => (
                       <div key={resource.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
                         <div className="relative w-10 h-10 bg-muted rounded-md border overflow-hidden shrink-0">
-                          {resource.img && (
-                            <Image 
-                              src={resource.img} 
-                              alt={resource.name} 
-                              fill
-                              className="object-contain p-1"
-                            />
-                          )}
+                          <SafeImage 
+                            src={resource.img} 
+                            alt={resource.name} 
+                            fill
+                            className="object-contain p-1"
+                          />
                         </div>
                         <div className="flex-1 min-w-0 pr-2">
                           <div className="text-sm font-medium">{resource.name}</div>
@@ -438,7 +436,7 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                    >
                       <div className="flex items-center gap-4">
                         <div className="relative w-12 h-12 bg-muted rounded-md border overflow-hidden shrink-0">
-                          {item.img && <Image src={item.img} alt={item.name} fill className="object-contain p-1" />}
+                          <SafeImage src={item.img} alt={item.name} fill className="object-contain p-1" />
                         </div>
                         <div className="flex-auto">
                           <div className="font-medium">{item.name}</div>

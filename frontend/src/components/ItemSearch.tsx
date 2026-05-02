@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
+import { SafeImage } from '@/components/SafeImage';
 import { Input } from '@/components/ui/input';
 import { searchItems, ItemSearchResponse } from '@/lib/api';
 import { Card } from '@/components/ui/card';
@@ -130,16 +130,12 @@ export const ItemSearch: React.FC<ItemSearchProps> = ({ onSelect }) => {
                 }}
               >
                 <div className="relative w-10 h-10 bg-muted rounded-md overflow-hidden border border-border/50 group-hover:border-primary/50 transition-colors">
-                  {item.img ? (
-                    <Image 
-                      src={item.img} 
-                      alt={item.name} 
-                      fill
-                      className="object-contain p-0.5" 
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted-foreground/20" />
-                  )}
+                  <SafeImage 
+                    src={item.img} 
+                    alt={item.name} 
+                    fill
+                    className="object-contain p-0.5" 
+                  />
                 </div>
                 <span className="font-medium text-sm">{item.name}</span>
               </div>
