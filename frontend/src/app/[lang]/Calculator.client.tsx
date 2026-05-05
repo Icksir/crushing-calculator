@@ -5,7 +5,8 @@ import { RuneTable } from '@/components/RuneTable';
 import { RecipeEditor } from '@/components/RecipeEditor';
 import { useRunePrices } from '@/context/RunePriceContext';
 import { ItemSearchResponse, ItemStat, CalculateResponse, calculateProfit, getItemDetails, Ingredient, saveItemCoefficient, submitPredictionData } from '@/lib/api';
-import { formatNumber, formatDate } from '@/lib/utils';
+import { useStatCatalog } from '@/hooks/useStatCatalog';
+import { formatNumber, formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,12 +51,14 @@ const Calculator = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [coeffChanged, setCoeffChanged] = useState(false);
+  const [exos, setExos] = useState<{ canonical: string; value: number }[]>([]);
 
   const runesContainerRef = useRef<HTMLDivElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { runePrices, server, setServer, isLoading } = useRunePrices();
   const { t, language } = useLanguage();
+  const { statCatalog, getLabel } = useStatCatalog();
   const prevLanguageRef = useRef(language);
   const prevServerRef = useRef(server);
   const lastSavedCoeffRef = useRef<number | ''>(100);
@@ -64,6 +67,19 @@ const Calculator = () => {
   useEffect(() => {
     setIsHydrated(true);
   }, []);
+
+  const exoStats = useMemo<ItemStat[]>(() => {
+    return exos.map((exo) => ({
+      name: getLabel(exo.canonical),
+      value: exo.value,
+      min: 0,
+      max: 0,
+    }));
+  }, [exos, getLabel]);
+
+  const allStats = useMemo<ItemStat[]>(() => {
+    return [...stats, ...exoStats];
+  }, [stats, exoStats]);
 
   useEffect(() => {
     if (coeff !== lastSavedCoeffRef.current) {
@@ -307,6 +323,7 @@ const Calculator = () => {
     setActiveTab('calculator');
     setSelectedItem(item);
     setStats(item.stats);
+    setExos([]);
     setResult(null);
     setRecipe([]);
     setCoeff('');
@@ -352,7 +369,7 @@ const Calculator = () => {
 
   useEffect(() => {
     const calculate = async () => {
-      if (!selectedItem || stats.length === 0 || isLoading) return;
+      if (!selectedItem || allStats.length === 0 || isLoading) return;
 
       try {
         const simpleRunePrices: Record<string, number> = {};
@@ -360,15 +377,24 @@ const Calculator = () => {
           simpleRunePrices[key] = val.price;
         });
 
+        // Normalize stats to ensure all values are proper numbers before sending to backend
+        const safeStats = allStats.map(s => ({
+          ...s,
+          value: typeof s.value === 'number' && !isNaN(s.value) ? s.value : 0,
+        }));
+
+        console.log('[Calculator] Sending calculate with stats:', safeStats.map(s => ({ name: s.name, value: s.value })));
+
         const res = await calculateProfit({
           item_level: itemLevel,
-          stats,
+          stats: safeStats,
           coefficient: coeff === '' ? 0 : coeff,
           item_cost: cost,
           rune_prices: simpleRunePrices,
           lang: language,
           server: server,
         });
+        console.log('[Calculator] Calculate response breakdown:', res.breakdown.map(b => ({ stat: b.stat, count: b.count, focus_count: b.focus_count })));
         setResult(res);
       } catch (error) {
         console.error("Calculation failed", error);
@@ -377,7 +403,7 @@ const Calculator = () => {
 
     const timer = setTimeout(calculate, 300);
     return () => clearTimeout(timer);
-  }, [stats, cost, coeff, runePrices, selectedItem, itemLevel, server, language]);
+  }, [allStats, cost, coeff, runePrices, selectedItem, itemLevel, server, language, isLoading]);
 
   const handleSaveCoefficient = async () => {
     if (!selectedItem || coeff === '') return;
@@ -407,7 +433,7 @@ const Calculator = () => {
     if (!result?.breakdown) return { totalValue: 0, profit: 0, breakEvenCoeff: 0 };
 
     const sinFocusTotal = result.breakdown.reduce((acc, item) => {
-      const currentStat = stats.find(s => s.name === item.stat);
+      const currentStat = allStats.find(s => s.name === item.stat);
       if (currentStat && currentStat.value < 0) return acc;
 
       const runeName = item.rune_name || currentStat?.rune_name || '';
@@ -416,7 +442,7 @@ const Calculator = () => {
     }, 0);
 
     const maxFocusTotal = result.breakdown.reduce((max, item) => {
-      const currentStat = stats.find(s => s.name === item.stat);
+      const currentStat = allStats.find(s => s.name === item.stat);
       if (currentStat && currentStat.value < 0) return max;
 
       const runeName = item.rune_name || currentStat?.rune_name || '';
@@ -432,7 +458,7 @@ const Calculator = () => {
 
     if (resultCoeffFactor > 0) {
         const sinFocusTotalRaw = result.breakdown.reduce((acc, item) => {
-            const currentStat = stats.find(s => s.name === item.stat);
+            const currentStat = allStats.find(s => s.name === item.stat);
             if (currentStat && currentStat.value < 0) return acc;
 
             const runeName = item.rune_name || currentStat?.rune_name || '';
@@ -441,7 +467,7 @@ const Calculator = () => {
         }, 0);
 
         const maxFocusTotalRaw = result.breakdown.reduce((max, item) => {
-            const currentStat = stats.find(s => s.name === item.stat);
+            const currentStat = allStats.find(s => s.name === item.stat);
             if (currentStat && currentStat.value < 0) return max;
 
             const runeName = item.rune_name || currentStat?.rune_name || '';
@@ -463,7 +489,7 @@ const Calculator = () => {
       profit: bestTotal - cost,
       breakEvenCoeff
     };
-  }, [result, runePrices, cost, coeff, stats]);
+  }, [result, runePrices, cost, coeff, allStats]);
 
   const handleAutomaticSave = async () => {
     if (!selectedItem || coeff === '' || cost <= 0 || isSaving) return;
@@ -659,13 +685,18 @@ const Calculator = () => {
                                 setCost(0);
                                 return;
                               }
-                              let num = Number(val);
+                              const stripped = stripLeadingZeros(val);
+                              let num = Number(stripped);
                               if (isNaN(num)) return;
                               if (num < 0) num = 0;
                               if (num > 10000000) num = 10000000;
                               setCost(num);
+                              // Force DOM correction
+                              e.target.value = String(num);
                             }}
                             onKeyDown={(e) => {
+                              preventLeadingZeros(e);
+                              if (e.defaultPrevented) return;
                               const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
                               const isDigit = /^[0-9]$/.test(e.key);
                               const isControl = controlKeys.includes(e.key);
@@ -689,10 +720,12 @@ const Calculator = () => {
                                 }
                               }
                             }}
+                            onFocus={selectOnFocusIfZero}
                             onPaste={(e) => {
                               const text = e.clipboardData.getData('text');
                               const sanitized = text.replace(/[^0-9.]/g, '');
-                              const num = Number(sanitized);
+                              const stripped = stripLeadingZeros(sanitized);
+                              const num = Number(stripped);
                               if (!Number.isNaN(num)) {
                                 e.preventDefault();
                                 let clamped = num;
@@ -727,13 +760,18 @@ const Calculator = () => {
                                   setCoeff('');
                                   return;
                                 }
-                                let num = Number(val);
+                                const stripped = stripLeadingZeros(val);
+                                let num = Number(stripped);
                                 if (isNaN(num)) return;
                                 if (num < 0) num = 0;
                                 if (num > 4000) num = 4000;
                                 setCoeff(num);
+                                // Force DOM correction
+                                e.target.value = String(num);
                               }}
                               onKeyDown={(e) => {
+                                preventLeadingZeros(e);
+                                if (e.defaultPrevented) return;
                                 const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
                                 const isDigit = /^[0-9]$/.test(e.key);
                                 const isControl = controlKeys.includes(e.key);
@@ -757,10 +795,12 @@ const Calculator = () => {
                                   }
                                 }
                               }}
+                              onFocus={selectOnFocusIfZero}
                               onPaste={(e) => {
                                 const text = e.clipboardData.getData('text');
                                 const sanitized = text.replace(/[^0-9.]/g, '');
-                                const num = Number(sanitized);
+                                const stripped = stripLeadingZeros(sanitized);
+                                const num = Number(stripped);
                                 if (!Number.isNaN(num)) {
                                   e.preventDefault();
                                   let clamped = num;
@@ -877,10 +917,14 @@ const Calculator = () => {
                    </div>
                 </div>
                 <RuneTable
-                  stats={stats}
+                  stats={allStats}
                   breakdown={result?.breakdown || []}
                   onStatChange={setStats}
                   showTop3={showTop3}
+                  baseStatCount={stats.length}
+                  exos={exos}
+                  onExosChange={setExos}
+                  statCatalog={statCatalog}
                 />
               </div>
             </div>
