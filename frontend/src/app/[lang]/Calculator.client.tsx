@@ -57,6 +57,7 @@ const Calculator = () => {
   const { runePrices, server, setServer, isLoading } = useRunePrices();
   const { t, language } = useLanguage();
   const prevLanguageRef = useRef(language);
+  const prevServerRef = useRef(server);
   const lastSavedCoeffRef = useRef<number | ''>(100);
   const lastAutoSentCoeffRef = useRef<string | null>(null);
 
@@ -223,22 +224,57 @@ const Calculator = () => {
   }, [language, selectedItem, server, isLoading]);
 
   useEffect(() => {
-    setSelectedItem(null);
-    setStats([]);
-    setRecipe([]);
-    setCost(0);
-    setCoeff(100);
-    setLastCoeffDate(null);
-    setItemLevel(200);
-    setDisplayLevel("200");
-    setResult(null);
-    setLoadingDetails(false);
-    setShowTop3(false);
-    setIsSaving(false);
-    setActiveTab('calculator');
-    lastSavedCoeffRef.current = 100;
-    setCoeffChanged(false);
-  }, [server]);
+    if (prevServerRef.current === server) return;
+    if (isLoading) return;
+
+    if (!selectedItem) {
+      prevServerRef.current = server;
+      return;
+    }
+
+    const fetchDetailsForNewServer = async () => {
+      setLoadingDetails(true);
+      try {
+        const details = await getItemDetails(selectedItem.id, language, server);
+        if (details) {
+          setSelectedItem(prev => prev ? { ...prev, name: details.name, img: details.img } : null);
+          setRecipe(details.recipe);
+          setStats(prevStats =>
+            details.stats.map((newStat, idx) => {
+              const oldStat = prevStats[idx];
+              if (oldStat) {
+                return { ...newStat, value: oldStat.value, max: oldStat.max };
+              }
+              return {
+                ...newStat,
+                max: newStat.max || newStat.min,
+                value: Math.floor((newStat.min + (newStat.max || newStat.min)) / 2),
+              };
+            })
+          );
+          setItemLevel(details.level);
+          setDisplayLevel(details.level.toString());
+          if (details.last_coefficient) {
+            setCoeff(details.last_coefficient);
+            lastSavedCoeffRef.current = details.last_coefficient;
+          } else {
+            setCoeff(100);
+            lastSavedCoeffRef.current = 100;
+          }
+          setCoeffChanged(false);
+          setLastCoeffDate(details.last_coefficient_date ?? null);
+          lastAutoSentCoeffRef.current = null;
+        }
+      } catch (e) {
+        console.error("Failed to refetch item details for new server", e);
+      } finally {
+        setLoadingDetails(false);
+        prevServerRef.current = server;
+      }
+    };
+
+    fetchDetailsForNewServer();
+  }, [server, selectedItem, language, isLoading]);
 
   useEffect(() => {
     const calculateVisibleRunes = () => {
