@@ -76,6 +76,11 @@ export const translations: Record<Language, Record<string, string>> = {
     total_without_focus: 'Total Sin Focus',
     rune_breakdown: 'Desglose de Runas',
     rune_breakdown_desc: 'Ajusta las tiradas para ver el resultado exacto.',
+    add_exo: 'Añadir Exo',
+    exo_badge: 'Exo',
+    select_stat: 'Selecciona una característica',
+    remove_exo: 'Eliminar exo',
+    no_more_stats: 'No quedan características para añadir',
     
     // Recipe Editor
     recipe_cost: 'Costo de Receta',
@@ -250,6 +255,11 @@ export const translations: Record<Language, Record<string, string>> = {
     total_without_focus: 'Total Without Focus',
     rune_breakdown: 'Rune Breakdown',
     rune_breakdown_desc: 'Adjust the rolls to see the exact result.',
+    add_exo: 'Add Exo',
+    exo_badge: 'Exo',
+    select_stat: 'Select a stat',
+    remove_exo: 'Remove exo',
+    no_more_stats: 'No more stats to add',
 
     // Recipe Editor
     recipe_cost: 'Recipe Cost',
@@ -424,6 +434,11 @@ export const translations: Record<Language, Record<string, string>> = {
     total_without_focus: 'Total Sans Focus',
     rune_breakdown: 'Détail des Runes',
     rune_breakdown_desc: 'Ajustez les jets pour voir le résultat exact.',
+    add_exo: 'Ajouter un Exo',
+    exo_badge: 'Exo',
+    select_stat: 'Sélectionner une caractéristique',
+    remove_exo: "Supprimer l'exo",
+    no_more_stats: 'Plus de stats à ajouter',
 
     // Recipe Editor
     recipe_cost: 'Coût de Recette',
@@ -598,6 +613,11 @@ export const translations: Record<Language, Record<string, string>> = {
     total_without_focus: 'Total Sem Foco',
     rune_breakdown: 'Detalhamento de Runas',
     rune_breakdown_desc: 'Ajuste as rolagens para ver o resultado exato.',
+    add_exo: 'Adicionar Exo',
+    exo_badge: 'Exo',
+    select_stat: 'Selecione uma característica',
+    remove_exo: 'Remover exo',
+    no_more_stats: 'Sem mais stats para adicionar',
 
     // Recipe Editor
     recipe_cost: 'Custo da Receita',
