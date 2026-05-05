@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { SafeImage } from '@/components/SafeImage';
 import { Input } from '@/components/ui/input';
 import { Ingredient, getIngredientPrices, updateIngredientPrices, IngredientPriceData } from '@/lib/api';
-import { formatNumber, formatDate } from '@/lib/utils';
+import { formatNumber, formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins } from 'lucide-react';
@@ -111,13 +111,18 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
                                 handlePriceChange(ing.id, 0, ing.name);
                                 return;
                               }
-                              let num = Number(val);
+                              const stripped = stripLeadingZeros(val);
+                              let num = Number(stripped);
                               if (isNaN(num)) return;
                               if (num < 0) num = 0;
                               if (num > 10000000) num = 10000000;
                               handlePriceChange(ing.id, num, ing.name);
+                              // Force DOM correction
+                              e.target.value = String(num);
                             }}
                             onKeyDown={(e) => {
+                              preventLeadingZeros(e);
+                              if (e.defaultPrevented) return;
                               // Block minus sign and disallow non-numeric (except control/navigation keys)
                               const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
                               const isDigit = /^[0-9]$/.test(e.key);
@@ -144,10 +149,12 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
                                 }
                               }
                             }}
+                            onFocus={selectOnFocusIfZero}
                             onPaste={(e) => {
                               const text = e.clipboardData.getData('text');
                               const sanitized = text.replace(/[^0-9.]/g, '');
-                              const num = Number(sanitized);
+                              const stripped = stripLeadingZeros(sanitized);
+                              const num = Number(stripped);
                               if (!Number.isNaN(num)) {
                                 e.preventDefault();
                                 let clamped = num;

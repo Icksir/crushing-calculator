@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ItemStat } from '@/lib/api';
 import { useRunePrices } from '@/context/RunePriceContext';
+import { stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
 
 interface StatEditorProps {
   stats: ItemStat[];
@@ -31,7 +32,20 @@ export const StatEditor: React.FC<StatEditorProps> = ({ stats, onChange }) => {
              <Input 
                 type="number" 
                 value={stat.value} 
-                onChange={(e) => handleStatChange(index, Number(e.target.value))}
+                onChange={(e) => {
+                  const stripped = stripLeadingZeros(e.target.value);
+                  const num = Number(stripped) || 0;
+                  handleStatChange(index, num);
+                  // Force DOM correction
+                  e.target.value = String(num);
+                }}
+                onKeyDown={(e) => preventLeadingZeros(e)}
+                onFocus={selectOnFocusIfZero}
+                onBlur={(e) => {
+                  const num = Number(stripLeadingZeros(e.target.value)) || 0;
+                  handleStatChange(index, num);
+                  e.target.value = String(num);
+                }}
                 className="w-24"
               />
           </div>
@@ -40,7 +54,20 @@ export const StatEditor: React.FC<StatEditorProps> = ({ stats, onChange }) => {
              <Input 
                 type="number" 
                 value={runePrices[stat.name]?.price || 0} 
-                onChange={(e) => updatePrice(stat.name, Number(e.target.value))}
+                onChange={(e) => {
+                  const stripped = stripLeadingZeros(e.target.value);
+                  const num = Number(stripped) || 0;
+                  updatePrice(stat.name, num);
+                  // Force DOM correction
+                  e.target.value = String(num);
+                }}
+                onKeyDown={(e) => preventLeadingZeros(e)}
+                onFocus={selectOnFocusIfZero}
+                onBlur={(e) => {
+                  const num = Number(stripLeadingZeros(e.target.value)) || 0;
+                  updatePrice(stat.name, num);
+                  e.target.value = String(num);
+                }}
                 className="w-24"
                 placeholder="Price"
               />
