@@ -6,6 +6,7 @@ from src.api.prices_routes import router as prices_routes
 from src.api.ocr_routes import router as ocr_routes
 from src.api.status_routes import router as status_routes
 from src.api.suggestions_routes import router as suggestions_routes
+from src.api.stats_routes import router as stats_routes
 from src.settings.config import env_settings
 from src.db.database import get_db_session
 from src.api.prices_routes import sync_rune_images
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     app.include_router(ocr_routes, prefix="/api")
     app.include_router(status_routes, prefix="/api")
     app.include_router(suggestions_routes, prefix="/api")
+    app.include_router(stats_routes, prefix="/api")
     
     @app.get("/")
     def health_check():

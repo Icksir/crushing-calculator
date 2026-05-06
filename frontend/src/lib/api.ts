@@ -195,9 +195,23 @@ export interface CalculateResponse {
   coefficient: number;
 }
 
+export interface StatCatalogEntry {
+  canonical: string;
+  label: string;
+  rune_name: string;
+  rune_image?: string;
+}
+
+export const getStatCatalog = async (lang: string = "es") => {
+  const res = await api.get<StatCatalogEntry[]>('/api/stats/catalog', {
+    params: { lang }
+  });
+  return res.data;
+};
+
 export interface MaintenanceResponse {
   active: boolean;
-  messages: Record<string, string>; 
+  messages: Record<string, string>;
 }
 
 export const searchItems = async (query: string, lang: string = "es") => {

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { formatDate } from '@/lib/utils';
+import { formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 
 export const RunePriceEditor = () => {
@@ -62,13 +62,18 @@ export const RunePriceEditor = () => {
                                     updatePrice(rune, 0);
                                     return;
                                   }
-                                  let num = Number(val);
+                                  const stripped = stripLeadingZeros(val);
+                                  let num = Number(stripped);
                                   if (isNaN(num)) return;
                                   if (num < 0) num = 0;
                                   if (num > 10000000) num = 10000000;
                                   updatePrice(rune, num);
+                                  // Force DOM correction
+                                  e.target.value = String(num);
                                 }}
                                 onKeyDown={(e) => {
+                                  preventLeadingZeros(e);
+                                  if (e.defaultPrevented) return;
                                   // Block minus sign and disallow non-numeric (except control/navigation keys)
                                   const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
                                   const isDigit = /^[0-9]$/.test(e.key);
@@ -95,10 +100,12 @@ export const RunePriceEditor = () => {
                                     }
                                   }
                                 }}
+                                onFocus={selectOnFocusIfZero}
                                 onPaste={(e) => {
                                   const text = e.clipboardData.getData('text');
                                   const sanitized = text.replace(/[^0-9.]/g, '');
-                                  const num = Number(sanitized);
+                                  const stripped = stripLeadingZeros(sanitized);
+                                  const num = Number(stripped);
                                   if (!Number.isNaN(num)) {
                                     e.preventDefault();
                                     let clamped = num;

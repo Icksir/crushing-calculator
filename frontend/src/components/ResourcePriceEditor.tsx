@@ -9,7 +9,7 @@ import { Ingredient, getIngredientsByFilter, getIngredientPrices, updateIngredie
 import { Loader2, Save, Filter, Calculator, RefreshCw, Ban, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { SafeImage } from '@/components/SafeImage';
 import { Switch } from '@/components/ui/switch';
-import { formatNumber, formatDate } from '@/lib/utils';
+import { formatNumber, formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRunePrices } from '@/context/RunePriceContext';
@@ -191,7 +191,19 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                       <Input 
                         type="number" 
                         value={minLevel} 
-                        onChange={e => setMinLevel(Number(e.target.value))}
+                        onChange={e => {
+                          const stripped = stripLeadingZeros(e.target.value);
+                          const num = Number(stripped) || 0;
+                          setMinLevel(num);
+                          e.target.value = String(num);
+                        }}
+                        onKeyDown={(e) => preventLeadingZeros(e)}
+                        onFocus={selectOnFocusIfZero}
+                        onBlur={(e) => {
+                          const num = Number(stripLeadingZeros(e.target.value)) || 0;
+                          setMinLevel(num);
+                          e.target.value = String(num);
+                        }}
                         min={1} max={200}
                       />
                     </div>
@@ -200,7 +212,19 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                       <Input 
                         type="number" 
                         value={maxLevel} 
-                        onChange={e => setMaxLevel(Number(e.target.value))}
+                        onChange={e => {
+                          const stripped = stripLeadingZeros(e.target.value);
+                          const num = Number(stripped) || 0;
+                          setMaxLevel(num);
+                          e.target.value = String(num);
+                        }}
+                        onKeyDown={(e) => preventLeadingZeros(e)}
+                        onFocus={selectOnFocusIfZero}
+                        onBlur={(e) => {
+                          const num = Number(stripLeadingZeros(e.target.value)) || 0;
+                          setMaxLevel(num);
+                          e.target.value = String(num);
+                        }}
                         min={1} max={200}
                       />
                     </div>
@@ -262,19 +286,24 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                     disabled={prices[resource.id]?.price === -1}
                                     min={0}
                                     max={10000000}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      if (val === '') {
-                                        handlePriceChange(resource.id, 0);
-                                        return;
-                                      }
-                                      let num = Number(val);
-                                      if (isNaN(num)) return;
-                                      if (num < 0) num = 0;
-                                      if (num > 10000000) num = 10000000;
-                                      handlePriceChange(resource.id, num);
-                                    }}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '') {
+                                      handlePriceChange(resource.id, 0);
+                                      return;
+                                    }
+                                    const stripped = stripLeadingZeros(val);
+                                    let num = Number(stripped);
+                                    if (isNaN(num)) return;
+                                    if (num < 0) num = 0;
+                                    if (num > 10000000) num = 10000000;
+                                    handlePriceChange(resource.id, num);
+                                    // Force DOM correction
+                                    e.target.value = String(num);
+                                  }}
                                     onKeyDown={(e) => {
+                                      preventLeadingZeros(e);
+                                      if (e.defaultPrevented) return;
                                       // Block minus sign and disallow non-numeric (except control/navigation keys)
                                       const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
                                       const isDigit = /^[0-9]$/.test(e.key);
@@ -301,18 +330,20 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                                         }
                                       }
                                     }}
-                                    onPaste={(e) => {
-                                      const text = e.clipboardData.getData('text');
-                                      const sanitized = text.replace(/[^0-9.]/g, '');
-                                      const num = Number(sanitized);
-                                      if (!Number.isNaN(num)) {
-                                        e.preventDefault();
-                                        let clamped = num;
-                                        if (clamped < 0) clamped = 0;
-                                        if (clamped > 10000000) clamped = 10000000;
-                                        handlePriceChange(resource.id, clamped);
-                                      }
-                                    }}
+                                    onFocus={selectOnFocusIfZero}
+                                  onPaste={(e) => {
+                                    const text = e.clipboardData.getData('text');
+                                    const sanitized = text.replace(/[^0-9.]/g, '');
+                                    const stripped = stripLeadingZeros(sanitized);
+                                    const num = Number(stripped);
+                                    if (!Number.isNaN(num)) {
+                                      e.preventDefault();
+                                      let clamped = num;
+                                      if (clamped < 0) clamped = 0;
+                                      if (clamped > 10000000) clamped = 10000000;
+                                      handlePriceChange(resource.id, clamped);
+                                    }
+                                  }}
                                   />
                                 </div>
                               </TooltipTrigger>
@@ -359,8 +390,22 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                             type="number" 
                             className="w-full sm:w-32" 
                             value={minCostFilter} 
-                            onChange={(e) => setMinCostFilter(Number(e.target.value))}
-                            onKeyDown={handleKeyDown}
+                            onChange={(e) => {
+                              const stripped = stripLeadingZeros(e.target.value);
+                              const num = Number(stripped) || 0;
+                              setMinCostFilter(num);
+                              e.target.value = String(num);
+                            }}
+                            onKeyDown={(e) => {
+                              preventLeadingZeros(e);
+                              if (!e.defaultPrevented) handleKeyDown(e);
+                            }}
+                            onFocus={selectOnFocusIfZero}
+                            onBlur={(e) => {
+                              const num = Number(stripLeadingZeros(e.target.value)) || 0;
+                              setMinCostFilter(num);
+                              e.target.value = String(num);
+                            }}
                         />
                     </div>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">

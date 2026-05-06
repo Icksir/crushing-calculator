@@ -209,78 +209,78 @@ STAT_DENSITIES = {
 # --- 2. BASE DE DATOS DE RUNAS 
 RUNE_DB = {
     # --- Características Primarias ---
-    "Fuerza":       [{"name": {"es": "Runa Fu", "en": "Str Rune", "fr": "Rune Fo"}, "weight": 1.0}],
-    "Inteligencia": [{"name": {"es": "Runa Inte", "en": "Int Rune", "fr": "Rune Ine"}, "weight": 1.0}],
-    "Suerte":       [{"name": {"es": "Runa Sue", "en": "Cha Rune", "fr": "Rune Cha"}, "weight": 1.0}],
-    "Agilidad":     [{"name": {"es": "Runa Agi", "en": "Agi Rune", "fr": "Rune Age"}, "weight": 1.0}],
-    
+    "Fuerza":       [{"name": {"es": "Runa Fu", "en": "Str Rune", "fr": "Rune Fo", "pt": "Runa For"}, "weight": 1.0}],
+    "Inteligencia": [{"name": {"es": "Runa Inte", "en": "Int Rune", "fr": "Rune Ine", "pt": "Runa Int"}, "weight": 1.0}],
+    "Suerte":       [{"name": {"es": "Runa Sue", "en": "Cha Rune", "fr": "Rune Cha", "pt": "Runa Sor"}, "weight": 1.0}],
+    "Agilidad":     [{"name": {"es": "Runa Agi", "en": "Agi Rune", "fr": "Rune Age", "pt": "Runa Agi"}, "weight": 1.0}],
+
     # --- Características Secundarias ---
-    "Vitalidad":    [{"name": {"es": "Runa Vi", "en": "Vit Rune", "fr": "Rune Vi"}, "weight": 1.0}],
-    "Sabiduría":    [{"name": {"es": "Runa Sa", "en": "Wis Rune", "fr": "Rune Sa"}, "weight": 3.0}],
-    "Iniciativa":   [{"name": {"es": "Runa Ini", "en": "Ini Rune", "fr": "Rune Ini"}, "weight": 1.0}], 
-    "Pods":         [{"name": {"es": "Runa Pod", "en": "Pod Rune", "fr": "Rune Pod"}, "weight": 2.5}], 
-    "Potencia":     [{"name": {"es": "Runa Pot", "en": "Pow Rune", "fr": "Rune Pui"}, "weight": 2.0}],
-    
+    "Vitalidad":    [{"name": {"es": "Runa Vi", "en": "Vit Rune", "fr": "Rune Vi", "pt": "Runa Vi"}, "weight": 1.0}],
+    "Sabiduría":    [{"name": {"es": "Runa Sa", "en": "Wis Rune", "fr": "Rune Sa", "pt": "Runa Sa"}, "weight": 3.0}],
+    "Iniciativa":   [{"name": {"es": "Runa Ini", "en": "Ini Rune", "fr": "Rune Ini", "pt": "Runa Ini"}, "weight": 1.0}],
+    "Pods":         [{"name": {"es": "Runa Pod", "en": "Pod Rune", "fr": "Rune Pod", "pt": "Runa Pod"}, "weight": 2.5}],
+    "Potencia":     [{"name": {"es": "Runa Pot", "en": "Pow Rune", "fr": "Rune Pui", "pt": "Runa Po"}, "weight": 2.0}],
+
     # --- Características Mayores ---
-    "PA":           [{"name": {"es": "Runa Ga PA", "en": "Ap Ga Rune", "fr": "Rune Ga Pa"}, "weight": 100.0}],
-    "PM":           [{"name": {"es": "Runa Ga PM", "en": "Mp Ga Rune", "fr": "Rune Ga Pme"}, "weight": 90.0}],
-    "Alcance":      [{"name": {"es": "Runa Al", "en": "Range Rune", "fr": "Rune Po"}, "weight": 51.0}],
-    "Invocaciones": [{"name": {"es": "Runa Invo", "en": "Sum Rune", "fr": "Rune Invo"}, "weight": 30.0}],
-    
+    "PA":           [{"name": {"es": "Runa Ga PA", "en": "Ap Ga Rune", "fr": "Rune Ga Pa", "pt": "Runa Ga Pa"}, "weight": 100.0}],
+    "PM":           [{"name": {"es": "Runa Ga PM", "en": "Mp Ga Rune", "fr": "Rune Ga Pme", "pt": "Runa Ga Pm"}, "weight": 90.0}],
+    "Alcance":      [{"name": {"es": "Runa Al", "en": "Range Rune", "fr": "Rune Po", "pt": "Runa Al"}, "weight": 51.0}],
+    "Invocaciones": [{"name": {"es": "Runa Invo", "en": "Sum Rune", "fr": "Rune Invo", "pt": "Runa Inv"}, "weight": 30.0}],
+
     # --- Combate ---
-    "Crítico":      [{"name": {"es": "Runa Cri", "en": "Cri Rune", "fr": "Rune Cri"}, "weight": 10.0}],
-    "Curas":        [{"name": {"es": "Runa Cu", "en": "Hea Rune", "fr": "Rune So"}, "weight": 10.0}],
-    "Prospección":  [{"name": {"es": "Runa Prospe", "en": "Pp Rune", "fr": "Rune Prospe"}, "weight": 3.0}],
-    "Placaje":      [{"name": {"es": "Runa Pla", "en": "Loc Rune", "fr": "Rune Tac"}, "weight": 4.0}],
-    "Huida":        [{"name": {"es": "Runa Hui", "en": "Dod Rune", "fr": "Rune Fui"}, "weight": 4.0}],
-    
+    "Crítico":      [{"name": {"es": "Runa Cri", "en": "Cri Rune", "fr": "Rune Cri", "pt": "Runa Cri"}, "weight": 10.0}],
+    "Curas":        [{"name": {"es": "Runa Cu", "en": "Hea Rune", "fr": "Rune So", "pt": "Runa Cur"}, "weight": 10.0}],
+    "Prospección":  [{"name": {"es": "Runa Prospe", "en": "Pp Rune", "fr": "Rune Prospe", "pt": "Runa Prospe"}, "weight": 3.0}],
+    "Placaje":      [{"name": {"es": "Runa Pla", "en": "Loc Rune", "fr": "Rune Tac", "pt": "Runa Blo"}, "weight": 4.0}],
+    "Huida":        [{"name": {"es": "Runa Hui", "en": "Dod Rune", "fr": "Rune Fui", "pt": "Runa Fu"}, "weight": 4.0}],
+
     # --- Daños ---
-    "Daños Neutrales": [{"name": {"es": "Runa Da Neutral", "en": "Neutral Dam Rune", "fr": "Rune Do Neutre"}, "weight": 5.0}],
-    "Daños Tierra":    [{"name": {"es": "Runa Da Tierra", "en": "Earth Dam Rune", "fr": "Rune Do Terre"}, "weight": 5.0}],
-    "Daños Fuego":     [{"name": {"es": "Runa Da Fuego", "en": "Fire Dam Rune", "fr": "Rune Do Feu"}, "weight": 5.0}],
-    "Daños Agua":      [{"name": {"es": "Runa Da Agua", "en": "Water Dam Rune", "fr": "Rune Do Eau"}, "weight": 5.0}],
-    "Daños Aire":      [{"name": {"es": "Runa Da Aire", "en": "Air Dam Rune", "fr": "Rune Do Air"}, "weight": 5.0}],
-    "Daños":           [{"name": {"es": "Runa Da", "en": "Dam Rune", "fr": "Rune Do"}, "weight": 20.0}],
-    "Daños Trampas":   [{"name": {"es": "Runa Da Tram", "en": "Trp Dam Rune", "fr": "Rune Do Pi"}, "weight": 5.0}],
-    "Daños Críticos":  [{"name": {"es": "Runa Da Cri", "en": "Cri Dam Rune", "fr": "Rune Do Cri"}, "weight": 5.0}],
-    "Empuje":          [{"name": {"es": "Runa Da Emp", "en": "Psh Dam Rune", "fr": "Rune Do Pou"}, "weight": 5.0}],
-    "Daños Reenvio":   [{"name": {"es": "Runa Da Reen", "en": "Dam Ref Rune", "fr": "Rune Do Ren"}, "weight": 5.0}],
-    "Potencia Trampas": [{"name": {"es": "Runa Por Tram", "en": "Trp Dam Rune", "fr": "Rune Per Pi"}, "weight": 2.0}],
-    
+    "Daños Neutrales": [{"name": {"es": "Runa Da Neutral", "en": "Neutral Dam Rune", "fr": "Rune Do Neutre", "pt": "Runa Da Neutro"}, "weight": 5.0}],
+    "Daños Tierra":    [{"name": {"es": "Runa Da Tierra", "en": "Earth Dam Rune", "fr": "Rune Do Terre", "pt": "Runa Da Terra"}, "weight": 5.0}],
+    "Daños Fuego":     [{"name": {"es": "Runa Da Fuego", "en": "Fire Dam Rune", "fr": "Rune Do Feu", "pt": "Runa Da Fogo"}, "weight": 5.0}],
+    "Daños Agua":      [{"name": {"es": "Runa Da Agua", "en": "Water Dam Rune", "fr": "Rune Do Eau", "pt": "Runa Da Água"}, "weight": 5.0}],
+    "Daños Aire":      [{"name": {"es": "Runa Da Aire", "en": "Air Dam Rune", "fr": "Rune Do Air", "pt": "Runa Da Ar"}, "weight": 5.0}],
+    "Daños":           [{"name": {"es": "Runa Da", "en": "Dam Rune", "fr": "Rune Do", "pt": "Runa Da"}, "weight": 20.0}],
+    "Daños Trampas":   [{"name": {"es": "Runa Da Tram", "en": "Trp Dam Rune", "fr": "Rune Do Pi", "pt": "Runa Da Ard"}, "weight": 5.0}],
+    "Daños Críticos":  [{"name": {"es": "Runa Da Cri", "en": "Cri Dam Rune", "fr": "Rune Do Cri", "pt": "Runa Da Cri"}, "weight": 5.0}],
+    "Empuje":          [{"name": {"es": "Runa Da Emp", "en": "Psh Dam Rune", "fr": "Rune Do Pou", "pt": "Runa Da Emp"}, "weight": 5.0}],
+    "Daños Reenvio":   [{"name": {"es": "Runa Da Reen", "en": "Dam Ref Rune", "fr": "Rune Do Ren", "pt": "Runa Da Ref"}, "weight": 5.0}],
+    "Potencia Trampas": [{"name": {"es": "Runa Por Tram", "en": "Trp Dam Rune", "fr": "Rune Per Pi", "pt": "Runa Por Ard"}, "weight": 2.0}],
+
     # --- Retiro y Esquiva ---
-    "Retiro PA":  [{"name": {"es": "Runa Ret PA", "en": "Ap Red Rune", "fr": "Rune Ret Pa"}, "weight": 7.0}],
-    "Retiro PM":  [{"name": {"es": "Runa Ret PM", "en": "Mp Red Rune", "fr": "Rune Ret Pme"}, "weight": 7.0}],
-    "Esquiva PA": [{"name": {"es": "Runa Re PA", "en": "Ap Res Rune", "fr": "Rune Ré Pa"}, "weight": 7.0}],
-    "Esquiva PM": [{"name": {"es": "Runa Re PM", "en": "Mp Res Rune", "fr": "Rune Ré Pme"}, "weight": 7.0}],
+    "Retiro PA":  [{"name": {"es": "Runa Ret PA", "en": "Ap Red Rune", "fr": "Rune Ret Pa", "pt": "Runa Ret Pa"}, "weight": 7.0}],
+    "Retiro PM":  [{"name": {"es": "Runa Ret PM", "en": "Mp Red Rune", "fr": "Rune Ret Pme", "pt": "Runa Ret Pm"}, "weight": 7.0}],
+    "Esquiva PA": [{"name": {"es": "Runa Re PA", "en": "Ap Res Rune", "fr": "Rune Ré Pa", "pt": "Runa Res Pa"}, "weight": 7.0}],
+    "Esquiva PM": [{"name": {"es": "Runa Re PM", "en": "Mp Res Rune", "fr": "Rune Ré Pme", "pt": "Runa Res Pm"}, "weight": 7.0}],
 
     # --- Resistencias ---
-    "Resistencia Fuego":   [{"name": {"es": "Runa Re Fuego", "en": "Fire Res Rune", "fr": "Rune Ré Feu"}, "weight": 2.0}],
-    "Resistencia Aire":    [{"name": {"es": "Runa Re Aire", "en": "Air Res Rune", "fr": "Rune Ré Air"}, "weight": 2.0}],
-    "Resistencia Tierra":  [{"name": {"es": "Runa Re Tierra", "en": "Earth Res Rune", "fr": "Rune Ré Terre"}, "weight": 2.0}],
-    "Resistencia Agua":    [{"name": {"es": "Runa Re Agua", "en": "Water Res Rune", "fr": "Rune Ré Eau"}, "weight": 2.0}],
-    "Resistencia Neutral": [{"name": {"es": "Runa Re Neutral", "en": "Neutral Res Rune", "fr": "Rune Ré Neutre"}, "weight": 2.0}],
-    "Resistencia Empuje":  [{"name": {"es": "Runa Re Emp", "en": "Psh Res Rune", "fr": "Rune Ré Pou"}, "weight": 2.0}],
-    "Resistencia Críticos":[{"name": {"es": "Runa Re Cri", "en": "Cri Res Rune", "fr": "Rune Ré Cri"}, "weight": 2.0}],
-    
+    "Resistencia Fuego":   [{"name": {"es": "Runa Re Fuego", "en": "Fire Res Rune", "fr": "Rune Ré Feu", "pt": "Runa Res Fogo"}, "weight": 2.0}],
+    "Resistencia Aire":    [{"name": {"es": "Runa Re Aire", "en": "Air Res Rune", "fr": "Rune Ré Air", "pt": "Runa Res Ar"}, "weight": 2.0}],
+    "Resistencia Tierra":  [{"name": {"es": "Runa Re Tierra", "en": "Earth Res Rune", "fr": "Rune Ré Terre", "pt": "Runa Res Terra"}, "weight": 2.0}],
+    "Resistencia Agua":    [{"name": {"es": "Runa Re Agua", "en": "Water Res Rune", "fr": "Rune Ré Eau", "pt": "Runa Res Água"}, "weight": 2.0}],
+    "Resistencia Neutral": [{"name": {"es": "Runa Re Neutral", "en": "Neutral Res Rune", "fr": "Rune Ré Neutre", "pt": "Runa Res Neutro"}, "weight": 2.0}],
+    "Resistencia Empuje":  [{"name": {"es": "Runa Re Emp", "en": "Psh Res Rune", "fr": "Rune Ré Pou", "pt": "Runa Res Emp"}, "weight": 2.0}],
+    "Resistencia Críticos":[{"name": {"es": "Runa Re Cri", "en": "Cri Res Rune", "fr": "Rune Ré Cri", "pt": "Runa Res Cri"}, "weight": 2.0}],
+
     # --- Resistencias % ---
-    "% Resistencia Fuego":   [{"name": {"es": "Runa Re Fuego Por", "en": "Fire Res Per Rune", "fr": "Rune Ré Per Feu"}, "weight": 6.0}],
-    "% Resistencia Aire":    [{"name": {"es": "Runa Re Aire Por", "en": "Air Res Per Rune", "fr": "Rune Ré Per Air"}, "weight": 6.0}],
-    "% Resistencia Tierra":  [{"name": {"es": "Runa Re Tierra Por", "en": "Earth Res Per Rune", "fr": "Rune Ré Per Terre"}, "weight": 6.0}],
-    "% Resistencia Agua":    [{"name": {"es": "Runa Re Agua Por", "en": "Water Res Per Rune", "fr": "Rune Ré Per Eau"}, "weight": 6.0}],
-    "% Resistencia Neutral": [{"name": {"es": "Runa Re Neutral Por", "en": "Neutral Res Per Rune", "fr": "Rune Ré Per Neutre"}, "weight": 6.0}],
+    "% Resistencia Fuego":   [{"name": {"es": "Runa Re Fuego Por", "en": "Fire Res Per Rune", "fr": "Rune Ré Per Feu", "pt": "Runa Res Por Fogo"}, "weight": 6.0}],
+    "% Resistencia Aire":    [{"name": {"es": "Runa Re Aire Por", "en": "Air Res Per Rune", "fr": "Rune Ré Per Air", "pt": "Runa Res Por Ar"}, "weight": 6.0}],
+    "% Resistencia Tierra":  [{"name": {"es": "Runa Re Tierra Por", "en": "Earth Res Per Rune", "fr": "Rune Ré Per Terre", "pt": "Runa Res Por Terra"}, "weight": 6.0}],
+    "% Resistencia Agua":    [{"name": {"es": "Runa Re Agua Por", "en": "Water Res Per Rune", "fr": "Rune Ré Per Eau", "pt": "Runa Res Por Água"}, "weight": 6.0}],
+    "% Resistencia Neutral": [{"name": {"es": "Runa Re Neutral Por", "en": "Neutral Res Per Rune", "fr": "Rune Ré Per Neutre", "pt": "Runa Res Por Neutro"}, "weight": 6.0}],
 
     # --- Daños % ---
-    "% Daños Hechizos": [{"name": {"es": "Runa Da Por He", "en": "Spe Dam Per Rune", "fr": "Rune Do Per So"}, "weight": 15.0}],
-    "% Daños Armas": [{"name": {"es": "Runa Da Por Ar", "en": "Wep Dam Per Rune", "fr": "Rune Do Per Ar"}, "weight": 15.0}],
-    "% Daños Distancia": [{"name": {"es": "Runa Da Por Di", "en": "Dis Dam Per Rune", "fr": "Rune Do Per Di"}, "weight": 15.0}],
-    "% Daños Cuerpo a Cuerpo": [{"name": {"es": "Runa Da Por CC", "en": "Mel Dam Per Rune", "fr": "Rune Do Per Mé"}, "weight": 15.0}],
-    
+    "% Daños Hechizos": [{"name": {"es": "Runa Da Por He", "en": "Spe Dam Per Rune", "fr": "Rune Do Per So", "pt": "Runa Da Por Fe"}, "weight": 15.0}],
+    "% Daños Armas": [{"name": {"es": "Runa Da Por Ar", "en": "Wep Dam Per Rune", "fr": "Rune Do Per Ar", "pt": "Runa Da Por Arm"}, "weight": 15.0}],
+    "% Daños Distancia": [{"name": {"es": "Runa Da Por Di", "en": "Dis Dam Per Rune", "fr": "Rune Do Per Di", "pt": "Runa Da Por Di"}, "weight": 15.0}],
+    "% Daños Cuerpo a Cuerpo": [{"name": {"es": "Runa Da Por CC", "en": "Mel Dam Per Rune", "fr": "Rune Do Per Mé", "pt": "Runa Da Por CaC"}, "weight": 15.0}],
+
     # --- Resistencia % (Melee/Dist) ---
-    "% Resistencia Cuerpo a Cuerpo": [{"name": {"es": "Runa Re Por CC", "en": "Mel Res Per Rune", "fr": "Rune Ré Per Mé"}, "weight": 10.0}],
-    "% Resistencia Distancia": [{"name": {"es": "Runa Re Por Di", "en": "Dis Res Per Rune", "fr": "Rune Ré Per Di"}, "weight": 10.0}],
-    
+    "% Resistencia Cuerpo a Cuerpo": [{"name": {"es": "Runa Re Por CC", "en": "Mel Res Per Rune", "fr": "Rune Ré Per Mé", "pt": "Runa Res Por CaC"}, "weight": 10.0}],
+    "% Resistencia Distancia": [{"name": {"es": "Runa Re Por Di", "en": "Dis Res Per Rune", "fr": "Rune Ré Per Di", "pt": "Runa Res Por Di"}, "weight": 10.0}],
+
     # --- Especiales ---
-    "Arma de caza": [{"name": {"es": "Runa de caza", "en": "Hunting Rune", "fr": "Rune de chasse"}, "weight": 5.0}],
+    "Arma de caza": [{"name": {"es": "Runa de caza", "en": "Hunting Rune", "fr": "Rune de chasse", "pt": "Runa de Caça"}, "weight": 5.0}],
 }
 
 # --- 4. HELPERS ---

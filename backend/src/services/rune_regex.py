@@ -250,5 +250,88 @@ STAT_MAPS = {
         'Tacle': 'Placaje',
         'Fuite': 'Huida',
         'Arme de chasse': 'Arma de caza',
+    },
+
+    "pt": {
+        # --- Porcentajes ---
+        '% de crítico': 'Crítico',
+        '% de danos de feitiços': '% Daños Hechizos',
+        '% de danos de armas': '% Daños Armas',
+        '% de danos à distância': '% Daños Distancia',
+        '% de danos no corpo a corpo': '% Daños Cuerpo a Cuerpo',
+
+        '% de resistência ao corpo a corpo': '% Resistencia Cuerpo a Cuerpo',
+        '% de resistência à distância': '% Resistencia Distancia',
+        '% resistência à terra': '% Resistencia Tierra',
+        '% resistência à água': '% Resistencia Agua',
+        '% resistência ao ar': '% Resistencia Aire',
+        '% resistência ao fogo': '% Resistencia Fuego',
+        '% resistência neutra': '% Resistencia Neutral',
+        '% de resistência neutra': '% Resistencia Neutral',
+        '% de resistência à água': '% Resistencia Agua',
+
+        # --- Daños Fijos ---
+        'de dano': 'Daños',
+        'de dano críticos': 'Daños Críticos',
+        'de dano neutros': 'Daños Neutrales',
+        'de dano de terra': 'Daños Tierra',
+        'de dano de fogo': 'Daños Fuego',
+        'de dano de água': 'Daños Agua',
+        'de dano de ar': 'Daños Aire',
+        'de dano de empurrão': 'Empuje',
+        'de dano de armadilha': 'Daños Trampas',
+        'de danos reenviados': 'Daños Reenvio',
+
+        # --- Resistencias Fijas ---
+        'de resistência a crítico': 'Resistencia Críticos',
+        'de resistência a terra': 'Resistencia Tierra',
+        'de resistência a água': 'Resistencia Agua',
+        'de resistência a ar': 'Resistencia Aire',
+        'de resistência a fogo': 'Resistencia Fuego',
+        'de resistência a neutro': 'Resistencia Neutral',
+        'de resistência a empurrão': 'Resistencia Empuje',
+
+        # --- Stats Base ---
+        'Vitalidade': 'Vitalidad',
+        'Força': 'Fuerza',
+        'Inteligência': 'Inteligencia',
+        'Sorte': 'Suerte',
+        'Agilidade': 'Agilidad',
+        'Sabedoria': 'Sabiduría',
+
+        'Iniciativa': 'Iniciativa',
+        'iniciativa': 'Iniciativa',
+        'Prospecção': 'Prospección',
+        'de prospecção': 'Prospección',
+        'Pod': 'Pods',
+
+        # --- Potencia ---
+        'Potência': 'Potencia',
+        'Potência (armadilhas)': 'Potencia Trampas',
+
+        # --- PA / PM / Alcance ---
+        'PA': 'PA',
+        'PM': 'PM',
+        'de alcance': 'Alcance',
+
+        # --- Retiros y Esquivas ---
+        'Retirada de PA': 'Retiro PA',
+        'de retirada de PA': 'Retiro PA',
+        'Retirada de PM': 'Retiro PM',
+        'de retirada de PM': 'Retiro PM',
+
+        'Esquiva PA': 'Esquiva PA',
+        'de esquiva PA': 'Esquiva PA',
+        'Esquiva PM': 'Esquiva PM',
+        'de esquiva PM': 'Esquiva PM',
+
+        # --- Otros ---
+        'Invocação': 'Invocaciones',
+        'de cura': 'Curas',
+        'Bloqueio': 'Placaje',
+        'de bloqueio': 'Placaje',
+        'Fuga': 'Huida',
+        'de fuga': 'Huida',
+        'Arma de caça': 'Arma de caza',
     }
 }
