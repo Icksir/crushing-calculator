@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeImage } from '@/components/SafeImage';
-import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { Ingredient, getIngredientPrices, updateIngredientPrices, IngredientPriceData } from '@/lib/api';
-import { formatNumber, formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
+import { formatNumber, formatDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins } from 'lucide-react';
@@ -98,71 +98,13 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div>
-                          <Input 
-                            type="number" 
+                          <NumericInput
                             placeholder={t('unit_price_placeholder')}
                             className="h-8 text-sm text-right px-2 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-colors no-spinner"
-                            value={prices[ing.id]?.price || ''}
+                            value={prices[ing.id]?.price ?? ''}
                             min={0}
-                            max={10000000}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                handlePriceChange(ing.id, 0, ing.name);
-                                return;
-                              }
-                              const stripped = stripLeadingZeros(val);
-                              let num = Number(stripped);
-                              if (isNaN(num)) return;
-                              if (num < 0) num = 0;
-                              if (num > 10000000) num = 10000000;
-                              handlePriceChange(ing.id, num, ing.name);
-                              // Force DOM correction
-                              e.target.value = String(num);
-                            }}
-                            onKeyDown={(e) => {
-                              preventLeadingZeros(e);
-                              if (e.defaultPrevented) return;
-                              // Block minus sign and disallow non-numeric (except control/navigation keys)
-                              const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
-                              const isDigit = /^[0-9]$/.test(e.key);
-                              const isControl = controlKeys.includes(e.key);
-                              // Allow '.' if user enters decimals; block only '-'
-                              if (e.key === '-') {
-                                e.preventDefault();
-                                return;
-                              }
-                              if (!isDigit && !isControl && e.key !== '.') {
-                                e.preventDefault();
-                                return;
-                              }
-                              // Prevent creating a value > 10000000 when typing another digit
-                              if (isDigit) {
-                                const input = e.currentTarget as HTMLInputElement;
-                                const start = input.selectionStart ?? input.value.length;
-                                const end = input.selectionEnd ?? input.value.length;
-                                const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
-                                const newNum = Number(newValStr);
-                                if (!Number.isNaN(newNum) && newNum > 10000000) {
-                                  e.preventDefault();
-                                  return;
-                                }
-                              }
-                            }}
-                            onFocus={selectOnFocusIfZero}
-                            onPaste={(e) => {
-                              const text = e.clipboardData.getData('text');
-                              const sanitized = text.replace(/[^0-9.]/g, '');
-                              const stripped = stripLeadingZeros(sanitized);
-                              const num = Number(stripped);
-                              if (!Number.isNaN(num)) {
-                                e.preventDefault();
-                                let clamped = num;
-                                if (clamped < 0) clamped = 0;
-                                if (clamped > 10000000) clamped = 10000000;
-                                handlePriceChange(ing.id, clamped, ing.name);
-                              }
-                            }}
+                            max={10_000_000}
+                            onValueChange={(v) => handlePriceChange(ing.id, v === '' ? 0 : v, ing.name)}
                           />
                         </div>
                       </TooltipTrigger>

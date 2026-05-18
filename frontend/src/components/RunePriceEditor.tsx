@@ -2,11 +2,11 @@
 import React from 'react';
 import { useRunePrices } from '@/context/RunePriceContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Coins, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 
 export const RunePriceEditor = () => {
@@ -50,70 +50,12 @@ export const RunePriceEditor = () => {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div>
-                              <Input 
-                                type="number" 
+                              <NumericInput
                                 className="text-right h-8"
                                 value={data.price}
+                                onValueChange={(v) => updatePrice(rune, v === '' ? 0 : v)}
                                 min={0}
-                                max={10000000}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (val === '') {
-                                    updatePrice(rune, 0);
-                                    return;
-                                  }
-                                  const stripped = stripLeadingZeros(val);
-                                  let num = Number(stripped);
-                                  if (isNaN(num)) return;
-                                  if (num < 0) num = 0;
-                                  if (num > 10000000) num = 10000000;
-                                  updatePrice(rune, num);
-                                  // Force DOM correction
-                                  e.target.value = String(num);
-                                }}
-                                onKeyDown={(e) => {
-                                  preventLeadingZeros(e);
-                                  if (e.defaultPrevented) return;
-                                  // Block minus sign and disallow non-numeric (except control/navigation keys)
-                                  const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
-                                  const isDigit = /^[0-9]$/.test(e.key);
-                                  const isControl = controlKeys.includes(e.key);
-                                  // Allow '.' if user enters decimals; block only '-'
-                                  if (e.key === '-') {
-                                    e.preventDefault();
-                                    return;
-                                  }
-                                  if (!isDigit && !isControl && e.key !== '.') {
-                                    e.preventDefault();
-                                    return;
-                                  }
-                                  // Prevent creating a value > 10000000 when typing another digit
-                                  if (isDigit) {
-                                    const input = e.currentTarget as HTMLInputElement;
-                                    const start = input.selectionStart ?? input.value.length;
-                                    const end = input.selectionEnd ?? input.value.length;
-                                    const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
-                                    const newNum = Number(newValStr);
-                                    if (!Number.isNaN(newNum) && newNum > 10000000) {
-                                      e.preventDefault();
-                                      return;
-                                    }
-                                  }
-                                }}
-                                onFocus={selectOnFocusIfZero}
-                                onPaste={(e) => {
-                                  const text = e.clipboardData.getData('text');
-                                  const sanitized = text.replace(/[^0-9.]/g, '');
-                                  const stripped = stripLeadingZeros(sanitized);
-                                  const num = Number(stripped);
-                                  if (!Number.isNaN(num)) {
-                                    e.preventDefault();
-                                    let clamped = num;
-                                    if (clamped < 0) clamped = 0;
-                                    if (clamped > 10000000) clamped = 10000000;
-                                    updatePrice(rune, clamped);
-                                  }
-                                }}
+                                max={10_000_000}
                               />
                             </div>
                           </TooltipTrigger>
