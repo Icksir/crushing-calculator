@@ -1,10 +1,9 @@
 'use client';
 import React from 'react';
-import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { Label } from '@/components/ui/label';
 import { ItemStat } from '@/lib/api';
 import { useRunePrices } from '@/context/RunePriceContext';
-import { stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
 
 interface StatEditorProps {
   stats: ItemStat[];
@@ -29,45 +28,20 @@ export const StatEditor: React.FC<StatEditorProps> = ({ stats, onChange }) => {
           <Label className="w-32 truncate" title={stat.name}>{stat.name}</Label>
           <div className="flex flex-col">
              <Label className="text-xs text-gray-500">Value</Label>
-             <Input 
-                type="number" 
-                value={stat.value} 
-                onChange={(e) => {
-                  const stripped = stripLeadingZeros(e.target.value);
-                  const num = Number(stripped) || 0;
-                  handleStatChange(index, num);
-                  // Force DOM correction
-                  e.target.value = String(num);
-                }}
-                onKeyDown={(e) => preventLeadingZeros(e)}
-                onFocus={selectOnFocusIfZero}
-                onBlur={(e) => {
-                  const num = Number(stripLeadingZeros(e.target.value)) || 0;
-                  handleStatChange(index, num);
-                  e.target.value = String(num);
-                }}
+             <NumericInput
+                value={stat.value}
+                onValueChange={(v) => handleStatChange(index, v === '' ? 0 : v)}
+                allowNegative
                 className="w-24"
               />
           </div>
           <div className="flex flex-col">
              <Label className="text-xs text-gray-500">Rune Price</Label>
-             <Input 
-                type="number" 
-                value={runePrices[stat.name]?.price || 0} 
-                onChange={(e) => {
-                  const stripped = stripLeadingZeros(e.target.value);
-                  const num = Number(stripped) || 0;
-                  updatePrice(stat.name, num);
-                  // Force DOM correction
-                  e.target.value = String(num);
-                }}
-                onKeyDown={(e) => preventLeadingZeros(e)}
-                onFocus={selectOnFocusIfZero}
-                onBlur={(e) => {
-                  const num = Number(stripLeadingZeros(e.target.value)) || 0;
-                  updatePrice(stat.name, num);
-                  e.target.value = String(num);
-                }}
+             <NumericInput
+                value={runePrices[stat.name]?.price || 0}
+                onValueChange={(v) => updatePrice(stat.name, v === '' ? 0 : v)}
+                min={0}
+                max={10_000_000}
                 className="w-24"
                 placeholder="Price"
               />

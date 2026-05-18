@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { SafeImage } from '@/components/SafeImage';
-import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { Button } from '@/components/ui/button';
 import { ItemStat, RuneBreakdown, StatCatalogEntry } from '@/lib/api';
 import { useRunePrices } from '@/context/RunePriceContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { formatNumber, formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
+import { formatNumber, formatDate } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/context/LanguageContext';
 import { Plus, Trash2 } from 'lucide-react';
@@ -57,26 +57,17 @@ export const RuneTable: React.FC<RuneTableProps> = ({
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  const handleStatValueChange = (index: number, newValue: number | string) => {
+  const handleStatValueChange = (index: number, newValue: number) => {
     if (index < baseStatCount) {
       const newStats = [...stats];
-      newStats[index] = { ...newStats[index], value: newValue as number };
+      newStats[index] = { ...newStats[index], value: newValue };
       onStatChange(newStats.slice(0, baseStatCount));
     } else {
       const exoIndex = index - baseStatCount;
       const newExos = [...exos];
-      newExos[exoIndex] = { ...newExos[exoIndex], value: newValue as number };
+      newExos[exoIndex] = { ...newExos[exoIndex], value: newValue };
       onExosChange(newExos);
     }
-  };
-
-  const normalizeValue = (val: number | string): number => {
-    if (val === '' || val === '-') return 0;
-    if (typeof val === 'string') {
-      const num = parseInt(val, 10);
-      return isNaN(num) ? 0 : num;
-    }
-    return val;
   };
 
   const rows = stats.map((stat, index) => {
@@ -141,21 +132,6 @@ export const RuneTable: React.FC<RuneTableProps> = ({
 
   const handleRemoveExo = (exoIndex: number) => {
     onExosChange(exos.filter((_, i) => i !== exoIndex));
-  };
-
-  const handleStatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (/^[0-9]$/.test(e.key)) {
-      const input = e.currentTarget;
-      const start = input.selectionStart ?? 0;
-      const end = input.selectionEnd ?? 0;
-      const val = input.value;
-      const wouldBecome = val.slice(0, start) + e.key + val.slice(end);
-      if (/^-?0\d/.test(wouldBecome)) {
-        e.preventDefault();
-        const stripped = stripLeadingZeros(wouldBecome);
-        handleStatValueChange(index, parseInt(stripped, 10) || 0);
-      }
-    }
   };
 
   const renderExoAdder = () => (
@@ -241,33 +217,11 @@ export const RuneTable: React.FC<RuneTableProps> = ({
                     <div className="flex items-center justify-center gap-1 text-base bg-muted/30 rounded-md p-1 border">
                       <span className="text-muted-foreground w-8 text-right text-sm">{isExo ? '—' : stat.min}</span>
                       <span className="text-muted-foreground/30">·</span>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="-?[0-9]*"
+                      <NumericInput
                         className="w-16 h-8 text-center font-bold text-lg bg-background shadow-sm border-input focus-visible:ring-1 no-spinner"
                         value={stat.value}
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          if (newValue === '' || newValue === '-') {
-                            handleStatValueChange(index, newValue);
-                          } else if (/^-?\d*$/.test(newValue)) {
-                            const stripped = stripLeadingZeros(newValue);
-                            const num = parseInt(stripped, 10) || 0;
-                            handleStatValueChange(index, num);
-                            // Force DOM correction — bypasses React reconciliation
-                            // when parsed value equals previous state (e.g. "00" -> 0)
-                            e.target.value = stripped === '' || stripped === '-' ? String(num) : stripped;
-                          }
-                        }}
-                        onKeyDown={(e) => handleStatKeyDown(e, index)}
-                        onFocus={selectOnFocusIfZero}
-                        onBlur={() => {
-                          const normalized = normalizeValue(stat.value);
-                          if (normalized !== stat.value) {
-                            handleStatValueChange(index, normalized);
-                          }
-                        }}
+                        onValueChange={(v) => handleStatValueChange(index, v === '' ? 0 : v)}
+                        allowNegative
                       />
                       <span className="text-muted-foreground/30">·</span>
                       <span className="text-muted-foreground w-8 text-left text-sm">{isExo ? '—' : stat.max}</span>
@@ -385,33 +339,11 @@ export const RuneTable: React.FC<RuneTableProps> = ({
                   <span className="text-muted-foreground w-8 text-right text-sm">{isExo ? '—' : stat.min}</span>
                   <span className="text-muted-foreground/30">·</span>
 
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="-?[0-9]*"
+                  <NumericInput
                     className="w-16 h-8 text-center font-bold text-lg bg-background shadow-sm border-input focus-visible:ring-1 no-spinner"
                     value={stat.value}
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      if (newValue === '' || newValue === '-') {
-                        handleStatValueChange(index, newValue);
-                      } else if (/^-?\d*$/.test(newValue)) {
-                        const stripped = stripLeadingZeros(newValue);
-                        const num = parseInt(stripped, 10) || 0;
-                        handleStatValueChange(index, num);
-                        // Force DOM correction — bypasses React reconciliation
-                        // when parsed value equals previous state (e.g. "00" -> 0)
-                        e.target.value = stripped === '' || stripped === '-' ? String(num) : stripped;
-                      }
-                    }}
-                    onKeyDown={(e) => handleStatKeyDown(e, index)}
-                    onFocus={selectOnFocusIfZero}
-                    onBlur={() => {
-                      const normalized = normalizeValue(stat.value);
-                      if (normalized !== stat.value) {
-                        handleStatValueChange(index, normalized);
-                      }
-                    }}
+                    onValueChange={(v) => handleStatValueChange(index, v === '' ? 0 : v)}
+                    allowNegative
                   />
 
                   <span className="text-muted-foreground/30">·</span>
@@ -434,70 +366,15 @@ export const RuneTable: React.FC<RuneTableProps> = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div>
-                          <Input
-                            type="number"
+                          <NumericInput
                             className="w-24 h-8 pr-6 text-right font-mono text-sm"
                             value={runePrices[result?.rune_name || stat.rune_name || '']?.price || 0}
                             min={0}
-                            max={10000000}
-                            onChange={(e) => {
-                              const val = e.target.value;
+                            max={10_000_000}
+                            onValueChange={(v) => {
                               const runeName = result?.rune_name || stat.rune_name;
                               if (!runeName) return;
-
-                              if (val === '') {
-                                updatePrice(runeName, 0);
-                                return;
-                              }
-                              const stripped = stripLeadingZeros(val);
-                              let num = Number(stripped);
-                              if (isNaN(num)) return;
-                              if (num < 0) num = 0;
-                              if (num > 10000000) num = 10000000;
-                              updatePrice(runeName, num);
-                              // Force DOM correction
-                              e.target.value = String(num);
-                            }}
-                            onKeyDown={(e) => {
-                              preventLeadingZeros(e);
-                              if (e.defaultPrevented) return;
-                              const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
-                              const isDigit = /^[0-9]$/.test(e.key);
-                              const isControl = controlKeys.includes(e.key);
-                              if (e.key === '-') {
-                                e.preventDefault();
-                                return;
-                              }
-                              if (!isDigit && !isControl && e.key !== '.') {
-                                e.preventDefault();
-                                return;
-                              }
-                              if (isDigit) {
-                                const input = e.currentTarget as HTMLInputElement;
-                                const start = input.selectionStart ?? input.value.length;
-                                const end = input.selectionEnd ?? input.value.length;
-                                const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
-                                const newNum = Number(newValStr);
-                                if (!Number.isNaN(newNum) && newNum > 10000000) {
-                                  e.preventDefault();
-                                  return;
-                                }
-                              }
-                            }}
-                            onFocus={selectOnFocusIfZero}
-                            onPaste={(e) => {
-                              const text = e.clipboardData.getData('text');
-                              const sanitized = text.replace(/[^0-9.]/g, '');
-                              const stripped = stripLeadingZeros(sanitized);
-                              const num = Number(stripped);
-                              if (!Number.isNaN(num)) {
-                                e.preventDefault();
-                                let clamped = num;
-                                if (clamped < 0) clamped = 0;
-                                if (clamped > 10000000) clamped = 10000000;
-                                const runeName = result?.rune_name || stat.rune_name;
-                                if (runeName) updatePrice(runeName, clamped);
-                              }
+                              updatePrice(runeName, v === '' ? 0 : v);
                             }}
                           />
                         </div>
