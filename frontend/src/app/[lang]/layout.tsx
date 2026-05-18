@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import "../globals.css";
 import { LanguageProvider} from "@/context/LanguageContext";
@@ -9,16 +9,18 @@ import MaintenanceBanner from "@/components/MaintenanceBanner";
 
 const BASE_URL = 'https://kamaskope.icksir.com';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const hankenGrotesk = Hanken_Grotesk({
+  variable: "--font-hanken-grotesk",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "700"],
 });
 
 export async function generateMetadata({
@@ -100,7 +102,7 @@ export default async function LangLayout({
 
   return (
     <html lang={validLang} className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans flex flex-col min-h-screen`}>
+      <body className={`${hankenGrotesk.variable} ${jetbrainsMono.variable} font-sans flex flex-col min-h-screen`}>
         <Script
           id="jsonld-webapp"
           type="application/ld+json"
