@@ -187,19 +187,19 @@ export const RuneTable: React.FC<RuneTableProps> = ({
             const focusCount = result?.focus_count || 0;
             const focusTotal = Math.floor(focusCount * price);
 
-            let styleClass = 'text-purple-700 dark:text-purple-400';
+            let styleClass = 'text-focus-accent';
             if (focusTotal > 0) {
               if (showTop3) {
-                  if (focusTotal === sortedValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-lg font-black';
-                  else if (focusTotal === sortedValues[1]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-lg font-bold';
-                  else if (focusTotal === sortedValues[2]) styleClass = 'text-orange-600 dark:text-orange-400 text-lg font-bold';
+                  if (focusTotal === sortedValues[0]) styleClass = 'text-primary text-lg font-black';
+                  else if (focusTotal === sortedValues[1]) styleClass = 'text-yellow-500 text-lg font-bold';
+                  else if (focusTotal === sortedValues[2]) styleClass = 'text-orange-500 text-lg font-bold';
               } else {
-                  if (focusTotal === globalMax) styleClass = 'text-green-600 dark:text-green-400 text-lg';
+                  if (focusTotal === globalMax) styleClass = 'text-primary text-lg';
               }
             }
 
             return (
-              <div key={index} className={`rounded-lg border bg-card shadow-sm p-4 ${stat.value < 0 ? 'bg-red-100/50 dark:bg-red-900/20' : ''} ${isExo ? 'bg-amber-50/30 dark:bg-amber-950/10' : ''}`}>
+              <div key={index} className={`rounded-2xl border border-border bg-card shadow-sm p-4 ${stat.value < 0 ? 'bg-destructive/5' : ''} ${isExo ? 'bg-secondary/30' : ''}`}>
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-3">
                     <div className="relative w-8 h-8 flex items-center justify-center bg-muted/50 rounded-md border border-border/50">
@@ -241,15 +241,15 @@ export const RuneTable: React.FC<RuneTableProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 gap-0 text-sm">
-                  <div className="space-y-2 p-3 rounded-t-md bg-blue-50/20 dark:bg-blue-950/10 border">
-                    <h4 className="font-semibold text-blue-600 dark:text-blue-400">{t('without_focus')}</h4>
-                    <div className="flex justify-between"><span>{t('quantity')}:</span> <Badge variant="outline" className="font-mono text-xs border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">{result?.count?.toFixed(2) || '-'}</Badge></div>
-                    <div className="flex justify-between"><span>{t('total')}:</span> <span className="font-bold text-blue-700 dark:text-blue-400">{total > 0 ? `${formatNumber(total)} k` : '-'}</span></div>
+                  <div className="space-y-2 p-3 rounded-t-xl bg-tertiary/5 border border-border">
+                    <h4 className="font-semibold font-mono text-xs uppercase tracking-wider text-tertiary">{t('without_focus')}</h4>
+                    <div className="flex justify-between"><span className="text-muted-foreground">{t('quantity')}:</span> <Badge variant="outline" className="font-mono text-xs border-tertiary/40 text-tertiary">{result?.count?.toFixed(2) || '-'}</Badge></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">{t('total')}:</span> <span className="font-bold text-tertiary">{total > 0 ? `${formatNumber(total)} k` : '-'}</span></div>
                   </div>
-                  <div className="space-y-2 p-3 rounded-b-md bg-purple-50/20 dark:bg-purple-950/10 border border-t-0">
-                    <h4 className="font-semibold text-purple-600 dark:text-purple-400">{t('with_focus')}</h4>
-                    <div className="flex justify-between"><span>{t('quantity')}:</span> <Badge variant="outline" className="font-mono text-xs border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400">{result?.focus_count?.toFixed(2) || '-'}</Badge></div>
-                    <div className="flex justify-between"><span>{t('total')}:</span> <span className={`font-bold ${styleClass}`}>{focusTotal > 0 ? `${formatNumber(focusTotal)} k` : '-'}</span></div>
+                  <div className="space-y-2 p-3 rounded-b-xl bg-focus-accent/5 border border-t-0 border-border">
+                    <h4 className="font-semibold font-mono text-xs uppercase tracking-wider text-focus-accent">{t('with_focus')}</h4>
+                    <div className="flex justify-between"><span className="text-muted-foreground">{t('quantity')}:</span> <Badge variant="outline" className="font-mono text-xs border-focus-accent/40 text-focus-accent">{result?.focus_count?.toFixed(2) || '-'}</Badge></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">{t('total')}:</span> <span className={`font-bold ${styleClass}`}>{focusTotal > 0 ? `${formatNumber(focusTotal)} k` : '-'}</span></div>
                   </div>
                 </div>
               </div>
@@ -257,23 +257,23 @@ export const RuneTable: React.FC<RuneTableProps> = ({
         })}
 
         {/* Add Exo - Mobile */}
-        <div className="rounded-lg border border-dashed bg-muted/20 p-4 flex items-center justify-center">
+        <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-4 flex items-center justify-center">
           {renderExoAdder()}
         </div>
 
         {/* TOTAL SIN FOCUS - Mobile */}
-        <div className="rounded-lg border bg-muted/40 p-4 font-bold">
+        <div className="rounded-2xl border border-border bg-muted/30 p-4 font-bold">
             <div className="flex justify-between items-center text-lg">
-                <span>{t('total_without_focus')}</span>
+                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{t('total_without_focus')}</span>
                 {(() => {
-                 let styleClass = 'text-blue-700 dark:text-blue-400';
+                 let styleClass = 'text-tertiary';
                  if (totalSinFocus > 0) {
                    if (showTop3) {
-                      if (totalSinFocus === sortedValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-xl font-black';
-                      else if (totalSinFocus === sortedValues[1]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-xl font-bold';
-                      else if (totalSinFocus === sortedValues[2]) styleClass = 'text-orange-600 dark:text-orange-400 text-xl font-bold';
+                      if (totalSinFocus === sortedValues[0]) styleClass = 'text-primary text-xl font-black';
+                      else if (totalSinFocus === sortedValues[1]) styleClass = 'text-yellow-500 text-xl font-bold';
+                      else if (totalSinFocus === sortedValues[2]) styleClass = 'text-orange-500 text-xl font-bold';
                    } else {
-                      if (totalSinFocus === globalMax) styleClass = 'text-green-600 dark:text-green-400 text-xl';
+                      if (totalSinFocus === globalMax) styleClass = 'text-primary text-xl';
                    }
                  }
                  return <span className={styleClass}>{formatNumber(totalSinFocus)} k</span>;
@@ -285,19 +285,19 @@ export const RuneTable: React.FC<RuneTableProps> = ({
   }
 
   return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/40 hover:bg-muted/40">
+          <TableRow className="bg-muted/30 hover:bg-muted/30">
             <TableHead className="w-[200px] pl-6">{t('characteristic')}</TableHead>
             <TableHead className="w-[220px] text-center">{t('roll')}</TableHead>
             <TableHead className="w-[180px]">{t('rune')}</TableHead>
             <TableHead className="w-[120px]">{t('unit_price')}</TableHead>
-            <TableHead className="text-center bg-blue-50/50 dark:bg-blue-950/20 border-l border-r border-border/50" colSpan={2}>
-              <span className="text-blue-600 dark:text-blue-400 font-semibold">{t('without_focus')}</span>
+            <TableHead className="text-center bg-tertiary/5 border-l border-border" colSpan={2}>
+              <span className="text-tertiary font-semibold font-mono text-xs uppercase tracking-wider">{t('without_focus')}</span>
             </TableHead>
-            <TableHead className="text-center bg-purple-50/50 dark:bg-purple-950/20" colSpan={2}>
-              <span className="text-purple-600 dark:text-purple-400 font-semibold">{t('with_focus')}</span>
+            <TableHead className="text-center bg-focus-accent/5 border-l border-border" colSpan={2}>
+              <span className="text-focus-accent font-semibold font-mono text-xs uppercase tracking-wider">{t('with_focus')}</span>
             </TableHead>
           </TableRow>
           <TableRow className="text-[10px] uppercase tracking-wider text-muted-foreground border-b-2 hover:bg-transparent">
@@ -305,17 +305,17 @@ export const RuneTable: React.FC<RuneTableProps> = ({
             <TableHead className="text-center font-semibold">{t('roll_values')}</TableHead>
             <TableHead className="font-semibold">{t('type')}</TableHead>
             <TableHead className="font-semibold">{t('kamas')}</TableHead>
-            <TableHead className="text-right font-semibold border-l border-border/50 bg-blue-50/30 dark:bg-blue-950/10">{t('quantity')}</TableHead>
-            <TableHead className="text-right font-semibold border-r border-border/50 bg-blue-50/30 dark:bg-blue-950/10">{t('total')}</TableHead>
-            <TableHead className="text-right font-semibold bg-purple-50/30 dark:bg-purple-950/10">{t('quantity')}</TableHead>
-            <TableHead className="text-right font-semibold bg-purple-50/30 dark:bg-purple-950/10">{t('total')}</TableHead>
+            <TableHead className="text-right font-semibold border-l border-border bg-tertiary/5">{t('quantity')}</TableHead>
+            <TableHead className="text-right font-semibold bg-tertiary/5">{t('total')}</TableHead>
+            <TableHead className="text-right font-semibold border-l border-border bg-focus-accent/5">{t('quantity')}</TableHead>
+            <TableHead className="text-right font-semibold bg-focus-accent/5">{t('total')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map(({ stat, index, result, isExo }) => (
             <TableRow
               key={index}
-              className={`group hover:bg-muted/30 transition-colors ${stat.value < 0 ? 'bg-red-100/50 dark:bg-red-900/20' : ''} ${isExo ? 'bg-amber-50/30 dark:bg-amber-950/10' : ''}`}
+              className={`group hover:bg-muted/40 transition-colors ${stat.value < 0 ? 'bg-destructive/5' : ''} ${isExo ? 'bg-secondary/30' : ''}`}
             >
               <TableCell className="font-medium pl-6 py-3">
                 <div className="flex items-center gap-2">
@@ -389,23 +389,23 @@ export const RuneTable: React.FC<RuneTableProps> = ({
               </TableCell>
 
               {/* Sin Focus */}
-              <TableCell className="text-right font-mono text-base border-l border-border/50 bg-blue-50/10 dark:bg-blue-950/5 group-hover:bg-blue-50/20 dark:group-hover:bg-blue-950/10 transition-colors">
+              <TableCell className="text-right font-mono text-base border-l border-border bg-tertiary/5 group-hover:bg-tertiary/10 transition-colors">
                 {result?.count ? (
-                  <Badge variant="outline" className="font-mono font-normal text-sm border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400">
+                  <Badge variant="outline" className="font-mono font-normal text-sm border-tertiary/40 text-tertiary">
                     {result.count.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Badge>
                 ) : (
                   <span className="text-muted-foreground/30">-</span>
                 )}
               </TableCell>
-              <TableCell className="text-right font-bold text-base border-r border-border/50 bg-blue-50/10 dark:bg-blue-950/5 group-hover:bg-blue-50/20 dark:group-hover:bg-blue-950/10 transition-colors">
+              <TableCell className="text-right font-bold text-base bg-tertiary/5 group-hover:bg-tertiary/10 transition-colors">
                 {(() => {
                   const count = result?.count || 0;
                   const runeName = result?.rune_name || stat.rune_name || '';
                   const price = runePrices[runeName]?.price || 0;
                   const total = Math.floor(count * price);
                   return total > 0 ? (
-                    <span className="text-blue-700 dark:text-blue-400">{formatNumber(total)} k</span>
+                    <span className="text-tertiary">{formatNumber(total)} k</span>
                   ) : (
                     <span className="text-muted-foreground/30">-</span>
                   );
@@ -413,7 +413,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({
               </TableCell>
 
               {/* Con Focus */}
-              <TableCell className="text-right font-mono text-base bg-purple-50/10 dark:bg-purple-950/5 group-hover:bg-purple-50/20 dark:group-hover:bg-purple-950/10 transition-colors">
+              <TableCell className="text-right font-mono text-base border-l border-border bg-focus-accent/5 group-hover:bg-focus-accent/10 transition-colors">
                 <div className="flex items-center justify-end gap-2">
                     {result?.focus_image && result.focus_rune_name !== result.rune_name && (
                         <div className="w-5 h-5 relative" title={result.focus_rune_name}>
@@ -426,7 +426,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({
                         </div>
                     )}
                     {result?.focus_count ? (
-                      <Badge variant="outline" className="font-mono font-normal text-sm border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400">
+                      <Badge variant="outline" className="font-mono font-normal text-sm border-focus-accent/40 text-focus-accent">
                         {result.focus_count.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Badge>
                     ) : (
@@ -434,22 +434,22 @@ export const RuneTable: React.FC<RuneTableProps> = ({
                     )}
                 </div>
               </TableCell>
-              <TableCell className="text-right font-bold text-base bg-purple-50/10 dark:bg-purple-950/5 group-hover:bg-purple-50/20 dark:group-hover:bg-purple-950/10 transition-colors">
+              <TableCell className="text-right font-bold text-base bg-focus-accent/5 group-hover:bg-focus-accent/10 transition-colors">
                 {(() => {
                   const count = result?.focus_count || 0;
                   const runeName = result?.rune_name || stat.rune_name || '';
                   const price = runePrices[runeName]?.price || 0;
                   const total = Math.floor(count * price);
 
-                  let styleClass = 'text-purple-700 dark:text-purple-400';
+                  let styleClass = 'text-focus-accent';
 
                   if (total > 0) {
                     if (showTop3) {
-                        if (total === sortedValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-lg font-black animate-pulse';
-                        else if (total === sortedValues[1]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-lg font-bold animate-pulse';
-                        else if (total === sortedValues[2]) styleClass = 'text-orange-600 dark:text-orange-400 text-lg font-bold animate-pulse';
+                        if (total === sortedValues[0]) styleClass = 'text-primary text-lg font-black animate-pulse';
+                        else if (total === sortedValues[1]) styleClass = 'text-yellow-500 text-lg font-bold animate-pulse';
+                        else if (total === sortedValues[2]) styleClass = 'text-orange-500 text-lg font-bold animate-pulse';
                     } else {
-                        if (total === globalMax) styleClass = 'text-green-600 dark:text-green-400 text-lg animate-pulse';
+                        if (total === globalMax) styleClass = 'text-primary text-lg animate-pulse';
                     }
                   }
 
@@ -476,20 +476,18 @@ export const RuneTable: React.FC<RuneTableProps> = ({
           </TableRow>
 
           {/* TOTAL SIN FOCUS */}
-          <TableRow className="bg-muted/40 hover:bg-muted/40 font-bold border-t-2">
-            <TableCell colSpan={5} className="text-right text-base pr-4">{t('total_without_focus')}</TableCell>
-            <TableCell
-              className="text-right text-lg text-blue-700 dark:text-blue-400 bg-blue-50/30 dark:bg-blue-950/10 border-r border-border/50"
-            >
+          <TableRow className="bg-muted/30 hover:bg-muted/30 font-bold border-t-2 border-border">
+            <TableCell colSpan={5} className="text-right text-sm font-mono uppercase tracking-wider text-muted-foreground pr-4">{t('total_without_focus')}</TableCell>
+            <TableCell className="text-right text-lg bg-tertiary/10">
                {(() => {
-                 let styleClass = 'text-blue-700 dark:text-blue-400';
+                 let styleClass = 'text-tertiary';
                  if (totalSinFocus > 0) {
                    if (showTop3) {
-                      if (totalSinFocus === sortedValues[0]) styleClass = 'text-green-600 dark:text-green-400 text-xl font-black animate-pulse';
-                      else if (totalSinFocus === sortedValues[1]) styleClass = 'text-yellow-600 dark:text-yellow-400 text-xl font-bold animate-pulse';
-                      else if (totalSinFocus === sortedValues[2]) styleClass = 'text-orange-600 dark:text-orange-400 text-xl font-bold animate-pulse';
+                      if (totalSinFocus === sortedValues[0]) styleClass = 'text-primary text-xl font-black animate-pulse';
+                      else if (totalSinFocus === sortedValues[1]) styleClass = 'text-yellow-500 text-xl font-bold animate-pulse';
+                      else if (totalSinFocus === sortedValues[2]) styleClass = 'text-orange-500 text-xl font-bold animate-pulse';
                    } else {
-                      if (totalSinFocus === globalMax) styleClass = 'text-green-600 dark:text-green-400 text-xl animate-pulse';
+                      if (totalSinFocus === globalMax) styleClass = 'text-primary text-xl animate-pulse';
                    }
                  }
                  return (
@@ -499,7 +497,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({
                  );
                })()}
             </TableCell>
-            <TableCell colSpan={2} className="bg-purple-50/20 dark:bg-purple-950/10"></TableCell>
+            <TableCell colSpan={2} className="bg-focus-accent/5"></TableCell>
           </TableRow>
         </TableBody>
       </Table>
