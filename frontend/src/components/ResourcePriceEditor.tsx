@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Ingredient, getIngredientsByFilter, getIngredientPrices, updateIngredie
 import { Loader2, Save, Filter, Calculator, RefreshCw, Ban, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { SafeImage } from '@/components/SafeImage';
 import { Switch } from '@/components/ui/switch';
-import { formatNumber, formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
+import { formatNumber, formatDate } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRunePrices } from '@/context/RunePriceContext';
@@ -81,12 +81,6 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
 
   const handleCalculateProfit = () => {
     fetchProfitItems(1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleCalculateProfit();
-    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -188,44 +182,20 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                     </div>
                     <div className="space-y-2">
                       <Label>{t('min_level')}</Label>
-                      <Input 
-                        type="number" 
-                        value={minLevel} 
-                        onChange={e => {
-                          const stripped = stripLeadingZeros(e.target.value);
-                          const num = Number(stripped) || 0;
-                          setMinLevel(num);
-                          e.target.value = String(num);
-                        }}
-                        onKeyDown={(e) => preventLeadingZeros(e)}
-                        onFocus={selectOnFocusIfZero}
-                        onBlur={(e) => {
-                          const num = Number(stripLeadingZeros(e.target.value)) || 0;
-                          setMinLevel(num);
-                          e.target.value = String(num);
-                        }}
-                        min={1} max={200}
+                      <NumericInput
+                        value={minLevel}
+                        onValueChange={(v) => setMinLevel(v === '' ? 0 : v)}
+                        min={1}
+                        max={200}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>{t('max_level')}</Label>
-                      <Input 
-                        type="number" 
-                        value={maxLevel} 
-                        onChange={e => {
-                          const stripped = stripLeadingZeros(e.target.value);
-                          const num = Number(stripped) || 0;
-                          setMaxLevel(num);
-                          e.target.value = String(num);
-                        }}
-                        onKeyDown={(e) => preventLeadingZeros(e)}
-                        onFocus={selectOnFocusIfZero}
-                        onBlur={(e) => {
-                          const num = Number(stripLeadingZeros(e.target.value)) || 0;
-                          setMaxLevel(num);
-                          e.target.value = String(num);
-                        }}
-                        min={1} max={200}
+                      <NumericInput
+                        value={maxLevel}
+                        onValueChange={(v) => setMaxLevel(v === '' ? 0 : v)}
+                        min={1}
+                        max={200}
                       />
                     </div>
                     <div className="flex items-center gap-2 col-span-1">
@@ -278,72 +248,14 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div>
-                                  <Input 
-                                    type="number" 
+                                  <NumericInput
                                     placeholder={prices[resource.id]?.price === -1 ? "---" : "0"}
                                     className={`text-right h-8 w-[70px] ${prices[resource.id]?.price === -1 ? 'opacity-50 bg-muted' : ''}`}
-                                    value={prices[resource.id]?.price === -1 ? '' : (prices[resource.id]?.price || '')}
+                                    value={prices[resource.id]?.price === -1 ? '' : (prices[resource.id]?.price ?? '')}
                                     disabled={prices[resource.id]?.price === -1}
                                     min={0}
-                                    max={10000000}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val === '') {
-                                      handlePriceChange(resource.id, 0);
-                                      return;
-                                    }
-                                    const stripped = stripLeadingZeros(val);
-                                    let num = Number(stripped);
-                                    if (isNaN(num)) return;
-                                    if (num < 0) num = 0;
-                                    if (num > 10000000) num = 10000000;
-                                    handlePriceChange(resource.id, num);
-                                    // Force DOM correction
-                                    e.target.value = String(num);
-                                  }}
-                                    onKeyDown={(e) => {
-                                      preventLeadingZeros(e);
-                                      if (e.defaultPrevented) return;
-                                      // Block minus sign and disallow non-numeric (except control/navigation keys)
-                                      const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
-                                      const isDigit = /^[0-9]$/.test(e.key);
-                                      const isControl = controlKeys.includes(e.key);
-                                      // Allow '.' if user enters decimals; block only '-'
-                                      if (e.key === '-') {
-                                        e.preventDefault();
-                                        return;
-                                      }
-                                      if (!isDigit && !isControl && e.key !== '.') {
-                                        e.preventDefault();
-                                        return;
-                                      }
-                                      // Prevent creating a value > 10000000 when typing another digit
-                                      if (isDigit) {
-                                        const input = e.currentTarget as HTMLInputElement;
-                                        const start = input.selectionStart ?? input.value.length;
-                                        const end = input.selectionEnd ?? input.value.length;
-                                        const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
-                                        const newNum = Number(newValStr);
-                                        if (!Number.isNaN(newNum) && newNum > 10000000) {
-                                          e.preventDefault();
-                                          return;
-                                        }
-                                      }
-                                    }}
-                                    onFocus={selectOnFocusIfZero}
-                                  onPaste={(e) => {
-                                    const text = e.clipboardData.getData('text');
-                                    const sanitized = text.replace(/[^0-9.]/g, '');
-                                    const stripped = stripLeadingZeros(sanitized);
-                                    const num = Number(stripped);
-                                    if (!Number.isNaN(num)) {
-                                      e.preventDefault();
-                                      let clamped = num;
-                                      if (clamped < 0) clamped = 0;
-                                      if (clamped > 10000000) clamped = 10000000;
-                                      handlePriceChange(resource.id, clamped);
-                                    }
-                                  }}
+                                    max={10_000_000}
+                                    onValueChange={(v) => handlePriceChange(resource.id, v === '' ? 0 : v)}
                                   />
                                 </div>
                               </TooltipTrigger>
@@ -386,26 +298,12 @@ export const ResourcePriceEditor = ({ onSelectItem }: ResourcePriceEditorProps) 
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <Label className="whitespace-nowrap flex-shrink-0">{t('min_cost')}</Label>
-                        <Input 
-                            type="number" 
-                            className="w-full sm:w-32" 
-                            value={minCostFilter} 
-                            onChange={(e) => {
-                              const stripped = stripLeadingZeros(e.target.value);
-                              const num = Number(stripped) || 0;
-                              setMinCostFilter(num);
-                              e.target.value = String(num);
-                            }}
-                            onKeyDown={(e) => {
-                              preventLeadingZeros(e);
-                              if (!e.defaultPrevented) handleKeyDown(e);
-                            }}
-                            onFocus={selectOnFocusIfZero}
-                            onBlur={(e) => {
-                              const num = Number(stripLeadingZeros(e.target.value)) || 0;
-                              setMinCostFilter(num);
-                              e.target.value = String(num);
-                            }}
+                        <NumericInput
+                            className="w-full sm:w-32"
+                            value={minCostFilter}
+                            onValueChange={(v) => setMinCostFilter(v === '' ? 0 : v)}
+                            onEnter={handleCalculateProfit}
+                            min={0}
                         />
                     </div>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
