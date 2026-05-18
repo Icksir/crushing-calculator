@@ -20,6 +20,8 @@ export const WhatsNewBanner = () => {
             <CardContent>
                 <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
                     <li>{t('whats_new_item_1')}</li>
+                    <li>{t('whats_new_item_2')}</li>
+                    <li>{t('whats_new_item_3')}</li>
                 </ul>
             </CardContent>
         </Card>

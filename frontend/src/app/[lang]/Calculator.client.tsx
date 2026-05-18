@@ -556,9 +556,9 @@ const Calculator = () => {
   }, [coeff, cost, selectedItem, runePrices, isSaving, liveMetrics, language, server, handleAutomaticSave]);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 flex flex-col font-sans">
+    <div className="min-h-screen bg-background flex flex-col font-sans">
       {/* Top Bar */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="container mx-auto max-w-[1600px] flex h-16 items-center justify-between gap-6 px-4">
 
           <div className="flex items-center gap-8 flex-1 min-w-0">
@@ -603,12 +603,26 @@ const Calculator = () => {
       </header>
 
       <main className="flex-1 container mx-auto max-w-[1600px] p-4 md:p-8 space-y-8">
-        <div className="flex justify-between items-center border-b pb-4 gap-4">
+        <div className="flex justify-between items-center border-b border-border pb-0 gap-4">
           <div className="flex-1 min-w-0">
-            <div className="flex gap-2 overflow-x-auto">
-              <Button variant={activeTab === 'calculator' ? 'default' : 'ghost'} onClick={() => setActiveTab('calculator')} className="h-10 flex-shrink-0">{t('calculator')}</Button>
-              <Button variant={activeTab === 'runes' ? 'default' : 'ghost'} onClick={() => setActiveTab('runes')} className="h-10 flex-shrink-0">{t('rune_prices')}</Button>
-              <Button variant={activeTab === 'resources' ? 'default' : 'ghost'} onClick={() => setActiveTab('resources')} className="h-10 flex-shrink-0">{t('resource_prices')}</Button>
+            <div className="flex gap-1 overflow-x-auto">
+              {(['calculator', 'runes', 'resources'] as const).map((tab) => {
+                const labels = { calculator: t('calculator'), runes: t('rune_prices'), resources: t('resource_prices') };
+                const isActive = activeTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`h-10 px-4 flex-shrink-0 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                      isActive
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {labels[tab]}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div
@@ -637,26 +651,22 @@ const Calculator = () => {
             {/* Item Header & Controls */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Item Info Card */}
-            <Card className="lg:col-span-2 border-none shadow-lg bg-gradient-to-br from-card to-muted/20 relative">
-              <CardContent className="p-0 flex flex-col md:flex-row relative z-10">
+            <Card className="lg:col-span-2 border border-border shadow-md overflow-hidden">
+              <CardContent className="p-0 flex flex-col md:flex-row">
                 <div className="flex-1 p-6 md:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                    <div className="relative group">
-                      <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                      <div className="relative bg-card rounded-xl p-2 border shadow-sm">
-                        <SafeImage
-                            src={selectedItem.img}
-                            alt={selectedItem.name}
-                            width={100}
-                            height={100}
-                            className="object-contain"
-                            fallbackClassName="w-[100px] h-[100px]"
-                          />
-                      </div>
+                    <div className="bg-muted rounded-2xl p-2 border border-border flex-shrink-0">
+                      <SafeImage
+                          src={selectedItem.img}
+                          alt={selectedItem.name}
+                          width={100}
+                          height={100}
+                          className="object-contain"
+                          fallbackClassName="w-[100px] h-[100px]"
+                        />
                     </div>
 
                     <div className="flex-1 text-center sm:text-left space-y-2">
                       <div className="flex flex-col sm:flex-row items-center gap-3 justify-center sm:justify-start">
-                        {/* Changed from h1 to h2 — SEO h1 is in SeoHero */}
                         <h2 className="text-3xl font-extrabold tracking-tight lg:text-4xl">{selectedItem.name}</h2>
                         <Badge variant="secondary" className="w-fit px-3 py-1 text-sm h-fit justify-center shrink-0 whitespace-nowrap">{displayLevel === "Cargando..." ? displayLevel : `${t('level')} ${displayLevel}`}</Badge>
                       </div>
@@ -666,33 +676,33 @@ const Calculator = () => {
                     </div>
                   </div>
 
-                  <div className="w-full md:w-72 bg-muted/30 p-6 md:p-8 border-t md:border-t-0 md:border-l border-border/50 flex flex-col justify-center gap-4">
-                    <div className="flex items-center gap-3 bg-background/80 p-3 rounded-lg border shadow-sm">
-                      <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-yellow-700 dark:text-yellow-500">
-                        <Coins size={20} />
+                  <div className="w-full md:w-72 bg-muted/40 p-6 md:p-8 border-t md:border-t-0 md:border-l border-border flex flex-col justify-center gap-4">
+                    <div className="flex items-center gap-3 bg-background p-3 rounded-xl border border-border">
+                      <div className="p-2 bg-secondary rounded-lg text-muted-foreground flex-shrink-0">
+                        <Coins size={18} />
                       </div>
-                      <div className="flex flex-col flex-1">
-                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">{t('object_cost')}</span>
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">{t('object_cost')}</span>
                         <div className="flex items-center gap-1">
                           <NumericInput
                             value={cost}
                             onValueChange={(v) => setCost(v === '' ? 0 : v)}
                             min={0}
                             max={10_000_000}
-                            className="h-8 w-full text-right font-mono text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-2 bg-transparent no-spinner"
+                            className="h-8 w-full text-right font-mono text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-1 bg-transparent no-spinner"
                           />
-                          <span className="text-base font-bold">K</span>
+                          <span className="text-sm font-bold text-muted-foreground">K</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-3 bg-background/80 p-3 rounded-lg border shadow-sm">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-md text-blue-700 dark:text-blue-500">
-                          <Percent size={20} />
+                      <div className="flex items-center gap-3 bg-background p-3 rounded-xl border border-border">
+                        <div className="p-2 bg-secondary rounded-lg text-muted-foreground flex-shrink-0">
+                          <Percent size={18} />
                         </div>
-                        <div className="flex flex-col flex-1">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground">{t('coefficient')}</span>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">{t('coefficient')}</span>
                           <div className="flex items-center gap-1">
                             <NumericInput
                               value={coeff}
@@ -700,29 +710,29 @@ const Calculator = () => {
                               onEnter={handleSaveCoefficient}
                               min={0}
                               max={4000}
-                              className="h-8 w-full text-right font-bold text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-2 bg-transparent no-spinner"
+                              className="h-8 w-full text-right font-bold text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-1 bg-transparent no-spinner"
                               placeholder={loadingDetails ? "---" : "100"}
                             />
-                            <span className="text-base font-bold">%</span>
+                            <span className="text-sm font-bold text-muted-foreground">%</span>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className={`h-8 w-8 ml-1 text-muted-foreground hover:text-primary ${coeffChanged ? 'animate-pulse' : ''}`}
+                              className={`h-7 w-7 ml-1 text-muted-foreground hover:text-primary ${coeffChanged ? 'animate-pulse' : ''}`}
                               onClick={handleSaveCoefficient}
                               disabled={isSaving || coeff === ''}
                               title={t('save_coefficient')}
                             >
-                              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 ml-1 text-muted-foreground hover:text-primary"
+                              className="h-7 w-7 text-muted-foreground hover:text-primary"
                               onClick={() => setShowHistory(true)}
                               disabled={!selectedItem}
                               title="Ver historial"
                             >
-                              <History className="h-4 w-4" />
+                              <History className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -738,14 +748,13 @@ const Calculator = () => {
               </Card>
 
               {/* Profit Summary Card */}
-              <Card className="border-none shadow-lg bg-card flex flex-col justify-center relative overflow-hidden">
-                <div className={`absolute inset-0 opacity-5 ${liveMetrics.profit > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <Card className="border border-border shadow-md flex flex-col justify-center">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t('estimated_profit_max')}</CardTitle>
+                  <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-widest">{t('estimated_profit_max')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col gap-1">
-                    <div className={`text-5xl font-black tracking-tighter ${liveMetrics.profit > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <div className={`text-5xl font-black tracking-tighter ${liveMetrics.profit > 0 ? 'text-primary' : 'text-destructive'}`}>
                       {result ? `${formatNumber(liveMetrics.profit)}` : '---'} <span className="text-xl font-normal text-muted-foreground">k</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -755,22 +764,22 @@ const Calculator = () => {
 
                   {result && (
                     <div className="mt-6 space-y-2">
-                      <div className="flex justify-between text-base">
+                      <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{t('max_rune_value')}</span>
-                        <span className="font-medium">{formatNumber(liveMetrics.totalValue)} k</span>
+                        <span className="font-mono font-medium">{formatNumber(liveMetrics.totalValue)} k</span>
                       </div>
                       <Separator />
-                      <div className="flex justify-between text-base">
+                      <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{t('craft_cost')}</span>
-                        <span className="font-medium">{formatNumber(cost)} k</span>
+                        <span className="font-mono font-medium">{formatNumber(cost)} k</span>
                       </div>
                       <Separator />
-                      <div className="flex justify-between text-base items-center pt-1">
+                      <div className="flex justify-between text-sm items-center pt-1">
                         <span className="text-muted-foreground">{t('min_coefficient')}:</span>
-                        <span className={`font-bold px-2 py-0.5 rounded ${
+                        <span className={`font-mono font-bold px-2 py-0.5 rounded-lg text-sm ${
                           liveMetrics.breakEvenCoeff <= (coeff === '' ? 0 : coeff)
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            ? 'bg-primary/15 text-primary'
+                            : 'bg-destructive/15 text-destructive'
                         }`}>
                           {liveMetrics.breakEvenCoeff.toFixed(2)}%
                         </span>
@@ -802,9 +811,9 @@ const Calculator = () => {
                      <h2 className="text-2xl font-bold tracking-tight">{t('rune_breakdown')}</h2>
                      <p className="text-muted-foreground text-sm">{t('rune_breakdown_desc')}</p>
                    </div>
-                   <div className="flex items-center space-x-2 bg-card p-2 rounded-lg border shadow-sm">
+                   <div className="flex items-center space-x-2 bg-muted/40 px-3 py-2 rounded-xl border border-border">
                       <Switch id="show-top-3" checked={showTop3} onCheckedChange={setShowTop3} />
-                      <Label htmlFor="show-top-3" className="text-sm font-medium cursor-pointer">Top 3</Label>
+                      <Label htmlFor="show-top-3" className="text-sm font-mono font-medium cursor-pointer">Top 3</Label>
                    </div>
                 </div>
                 <RuneTable
@@ -822,8 +831,8 @@ const Calculator = () => {
           </div>
           ) : (
           <div className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-6 animate-in fade-in zoom-in duration-500">
-            <div className="bg-muted/30 p-8 rounded-full">
-              <CalculatorIcon size={64} className="text-muted-foreground/50" />
+            <div className="bg-muted/20 p-8 rounded-full border border-border">
+              <CalculatorIcon size={64} className="text-primary/40" />
             </div>
             <div className="max-w-md space-y-2">
               <h2 className="text-3xl font-bold tracking-tight">{t('crushing_calculator_title')}</h2>
