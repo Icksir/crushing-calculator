@@ -199,7 +199,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({
             }
 
             return (
-              <div key={index} className={`rounded-2xl border border-border bg-card shadow-sm p-4 ${stat.value < 0 ? 'bg-destructive/5' : ''} ${isExo ? 'bg-secondary/30' : ''}`}>
+              <div key={index} className={`rounded-2xl border border-border bg-card shadow-sm p-4 ${stat.value < 0 ? 'bg-destructive/5' : ''} ${isExo ? 'bg-amber-950/10' : ''}`}>
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-3">
                     <div className="relative w-8 h-8 flex items-center justify-center bg-muted/50 rounded-md border border-border/50">
@@ -315,7 +315,7 @@ export const RuneTable: React.FC<RuneTableProps> = ({
           {rows.map(({ stat, index, result, isExo }) => (
             <TableRow
               key={index}
-              className={`group hover:bg-muted/40 transition-colors ${stat.value < 0 ? 'bg-destructive/5' : ''} ${isExo ? 'bg-secondary/30' : ''}`}
+              className={`group hover:bg-muted/40 transition-colors ${stat.value < 0 ? 'bg-destructive/5' : ''} ${isExo ? 'bg-amber-950/10' : ''}`}
             >
               <TableCell className="font-medium pl-6 py-3">
                 <div className="flex items-center gap-2">
