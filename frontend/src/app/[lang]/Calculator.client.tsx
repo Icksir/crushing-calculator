@@ -6,9 +6,9 @@ import { RecipeEditor } from '@/components/RecipeEditor';
 import { useRunePrices } from '@/context/RunePriceContext';
 import { ItemSearchResponse, ItemStat, CalculateResponse, calculateProfit, getItemDetails, Ingredient, saveItemCoefficient, submitPredictionData } from '@/lib/api';
 import { useStatCatalog } from '@/hooks/useStatCatalog';
-import { formatNumber, formatDate, stripLeadingZeros, preventLeadingZeros, selectOnFocusIfZero } from '@/lib/utils';
+import { formatNumber, formatDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { NumericInput } from '@/components/ui/numeric-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -674,66 +674,11 @@ const Calculator = () => {
                       <div className="flex flex-col flex-1">
                         <span className="text-[10px] uppercase font-semibold text-muted-foreground">{t('object_cost')}</span>
                         <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
+                          <NumericInput
                             value={cost}
+                            onValueChange={(v) => setCost(v === '' ? 0 : v)}
                             min={0}
-                            max={10000000}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                setCost(0);
-                                return;
-                              }
-                              const stripped = stripLeadingZeros(val);
-                              let num = Number(stripped);
-                              if (isNaN(num)) return;
-                              if (num < 0) num = 0;
-                              if (num > 10000000) num = 10000000;
-                              setCost(num);
-                              // Force DOM correction
-                              e.target.value = String(num);
-                            }}
-                            onKeyDown={(e) => {
-                              preventLeadingZeros(e);
-                              if (e.defaultPrevented) return;
-                              const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
-                              const isDigit = /^[0-9]$/.test(e.key);
-                              const isControl = controlKeys.includes(e.key);
-                              if (e.key === '-') {
-                                e.preventDefault();
-                                return;
-                              }
-                              if (!isDigit && !isControl && e.key !== '.') {
-                                e.preventDefault();
-                                return;
-                              }
-                              if (isDigit) {
-                                const input = e.currentTarget as HTMLInputElement;
-                                const start = input.selectionStart ?? input.value.length;
-                                const end = input.selectionEnd ?? input.value.length;
-                                const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
-                                const newNum = Number(newValStr);
-                                if (!Number.isNaN(newNum) && newNum > 10000000) {
-                                  e.preventDefault();
-                                  return;
-                                }
-                              }
-                            }}
-                            onFocus={selectOnFocusIfZero}
-                            onPaste={(e) => {
-                              const text = e.clipboardData.getData('text');
-                              const sanitized = text.replace(/[^0-9.]/g, '');
-                              const stripped = stripLeadingZeros(sanitized);
-                              const num = Number(stripped);
-                              if (!Number.isNaN(num)) {
-                                e.preventDefault();
-                                let clamped = num;
-                                if (clamped < 0) clamped = 0;
-                                if (clamped > 10000000) clamped = 10000000;
-                                setCost(clamped);
-                              }
-                            }}
+                            max={10_000_000}
                             className="h-8 w-full text-right font-mono text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-2 bg-transparent no-spinner"
                           />
                           <span className="text-base font-bold">K</span>
@@ -749,66 +694,12 @@ const Calculator = () => {
                         <div className="flex flex-col flex-1">
                           <span className="text-[10px] uppercase font-semibold text-muted-foreground">{t('coefficient')}</span>
                           <div className="flex items-center gap-1">
-                            <Input
-                              type="number"
+                            <NumericInput
                               value={coeff}
+                              onValueChange={setCoeff}
+                              onEnter={handleSaveCoefficient}
                               min={0}
                               max={4000}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === '') {
-                                  setCoeff('');
-                                  return;
-                                }
-                                const stripped = stripLeadingZeros(val);
-                                let num = Number(stripped);
-                                if (isNaN(num)) return;
-                                if (num < 0) num = 0;
-                                if (num > 4000) num = 4000;
-                                setCoeff(num);
-                                // Force DOM correction
-                                e.target.value = String(num);
-                              }}
-                              onKeyDown={(e) => {
-                                preventLeadingZeros(e);
-                                if (e.defaultPrevented) return;
-                                const controlKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','Enter'];
-                                const isDigit = /^[0-9]$/.test(e.key);
-                                const isControl = controlKeys.includes(e.key);
-                                if (e.key === '-') {
-                                  e.preventDefault();
-                                  return;
-                                }
-                                if (!isDigit && !isControl && e.key !== '.') {
-                                  e.preventDefault();
-                                  return;
-                                }
-                                if (isDigit) {
-                                  const input = e.currentTarget as HTMLInputElement;
-                                  const start = input.selectionStart ?? input.value.length;
-                                  const end = input.selectionEnd ?? input.value.length;
-                                  const newValStr = input.value.slice(0, start) + e.key + input.value.slice(end);
-                                  const newNum = Number(newValStr);
-                                  if (!Number.isNaN(newNum) && newNum > 4000) {
-                                    e.preventDefault();
-                                    return;
-                                  }
-                                }
-                              }}
-                              onFocus={selectOnFocusIfZero}
-                              onPaste={(e) => {
-                                const text = e.clipboardData.getData('text');
-                                const sanitized = text.replace(/[^0-9.]/g, '');
-                                const stripped = stripLeadingZeros(sanitized);
-                                const num = Number(stripped);
-                                if (!Number.isNaN(num)) {
-                                  e.preventDefault();
-                                  let clamped = num;
-                                  if (clamped < 0) clamped = 0;
-                                  if (clamped > 4000) clamped = 4000;
-                                  setCoeff(clamped);
-                                }
-                              }}
                               className="h-8 w-full text-right font-bold text-xl border-none shadow-none focus-visible:ring-0 p-0 pr-2 bg-transparent no-spinner"
                               placeholder={loadingDetails ? "---" : "100"}
                             />
