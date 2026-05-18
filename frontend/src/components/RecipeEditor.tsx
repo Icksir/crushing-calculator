@@ -68,10 +68,10 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
   }, 0);
 
   return (
-    <Card className="border-none shadow-md bg-card h-full flex flex-col">
-      <CardHeader className="pb-3 border-b">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Coins className="w-4 h-4 text-yellow-600" />
+    <Card className="border border-border shadow-md bg-card h-full flex flex-col">
+      <CardHeader className="pb-3 border-b border-border">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Coins className="w-4 h-4 text-muted-foreground" />
           {t('recipe_cost')}
         </CardTitle>
       </CardHeader>
@@ -80,13 +80,13 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
           <div className="space-y-3">
             {recipe.map((ing) => (
               <div key={ing.id} className="flex items-center gap-3 group">
-                <div className="relative w-8 h-8 flex-shrink-0 bg-muted rounded-md border border-border/50 overflow-hidden">
-                   <SafeImage 
-                       src={ing.img} 
-                       alt={ing.name} 
-                       width={32} 
-                       height={32} 
-                       className="w-full h-full object-contain p-0.5" 
+                <div className="relative w-8 h-8 flex-shrink-0 bg-muted rounded-xl border border-border overflow-hidden">
+                   <SafeImage
+                       src={ing.img}
+                       alt={ing.name}
+                       width={32}
+                       height={32}
+                       className="w-full h-full object-contain p-0.5"
                    />
                    <div className="absolute bottom-0 right-0 bg-black/70 text-white text-[9px] px-1 rounded-tl-sm font-mono">x{ing.quantity}</div>
                 </div>
@@ -100,7 +100,7 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
                         <div>
                           <NumericInput
                             placeholder={t('unit_price_placeholder')}
-                            className="h-8 text-sm text-right px-2 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-colors no-spinner"
+                            className="h-8 text-sm text-right px-2 bg-secondary/50 border-border focus:bg-background focus:border-primary/50 transition-colors no-spinner font-mono"
                             value={prices[ing.id]?.price ?? ''}
                             min={0}
                             max={10_000_000}
@@ -118,11 +118,11 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({ recipe, onTotalCostC
             ))}
           </div>
         </ScrollArea>
-        
-        <div className="p-4 bg-muted/20 border-t mt-auto">
+
+        <div className="p-4 bg-muted/20 border-t border-border mt-auto rounded-b-2xl">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold uppercase">{t('total_cost')}</span>
-            <span className="font-bold text-lg text-primary">{formatNumber(totalCost)} k</span>
+            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-muted-foreground">{t('total_cost')}</span>
+            <span className="font-mono font-bold text-lg text-foreground">{formatNumber(totalCost)} k</span>
           </div>
         </div>
       </CardContent>
